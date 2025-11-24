@@ -1,0 +1,90 @@
+---
+title: "Multivariate Analysis"
+format:
+  html:
+    embed-resources: true
+execute:
+  echo: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(readxl)
+library(psych)
+```
+
+```{r}
+#| label: import-data
+#| include: false
+
+select_variables <- c("trstprl", "trstlgl", "trstplc", "trstplt", "trstprt", "trstep", "trstun", "stflife", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt")
+data <- na.omit(read_excel("./dataset1.xlsx", sheet = 1, na = c("77", "88", "99"))[, select_variables]) %>% 
+  rename(
+    X1 = trstprl, X2 = trstlgl, X3 = trstplc, X4 = trstplt, X5 = trstprt, X6 = trstep, X7 = trstun, X8 = stflife, X9 = stfeco, X10 = stfgov, X11 = stfdem, X12 = stfedu, X13 = stfhlth, X14 = imbgeco, X15 = imueclt, X16 = imwbcnt
+  )
+
+```
+
+
+## Abstract
+
+## Introduction
+
+## Methodology
+```{r}
+#| label: KMO
+#| warning: false
+#| echo: true
+
+KMO(data)
+```
+After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(data)$MSA, digits = 2)`. This is classified as "meritorious", so we have evidence that factor analysis is suitable for this data set.
+
+We'll start by performing factor analysis with a high number of values:
+
+```{r}
+#| label: first_fa
+#| warnings: false
+#| echo: true
+fa <- fa(data, nfactors = 10, rotate = "varimax", method = "cov") 
+print(fa$e.values, sort = TRUE, decreasing = TRUE)
+```
+There are 3 eigenvalues greater than 1.
+
+```{r}
+#| label: cumulative_var
+print(fa$Vaccounted, digits = 2)
+```
+However, 10 factors aren't enough to explain 80% of the variance (???)
+
+```{r}
+#| label: scree_plot
+scree(data, pc = FALSE, hline = -1)
+```
+
+```{r}
+fa_3_varimax <- fa(data,
+  nfactors = 6,
+  fm="pa",
+  rotate = "varimax")
+```
+
+```{r}
+fa.diagram(fa_3_varimax, errors = FALSE)
+```
+
+
+
+
+## Results
+
+## Discussion
+
+## Conclusions
+
+## References
