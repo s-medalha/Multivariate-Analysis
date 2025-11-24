@@ -1,0 +1,99 @@
+---
+title: "Multivariate Analysis"
+author:
+  - Ana Rasinhas
+  - Daniela Gonçalves
+  - Pedro Fernandes
+  - Ricardo Branco
+  - Samuel Medalha
+date: last-modified
+format:
+  pdf: default
+execute:
+  echo: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(readxl)
+library(psych)
+```
+
+```{r}
+#| label: import-data
+#| include: false
+
+selected_vars <- c("cntry", "trstprl", "trstlgl", "trstplc", "trstplt", "trstprt", "trstep", "trstun", "stflife", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt")
+country_data <- na.omit(read_excel("./dataset1.xlsx", sheet = 1, na = c("77", "88", "99"))[, selected_vars]) %>% 
+  rename(
+    X1 = trstprl, X2 = trstlgl, X3 = trstplc, X4 = trstplt, X5 = trstprt, X6 = trstep, X7 = trstun, X8 = stflife, X9 = stfeco, X10 = stfgov, X11 = stfdem, X12 = stfedu, X13 = stfhlth, X14 = imbgeco, X15 = imueclt, X16 = imwbcnt
+  )
+data <- country_data %>% select(-cntry)
+```
+
+
+## Abstract
+
+## Introduction
+
+## Methodology
+```{r}
+#| label: KMO
+#| warning: false
+KMO(data)
+```
+After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(data)$MSA, digits = 2)`. This is classified as "meritorious", so we have an indication that factor analysis is suitable for this data set.
+
+We'll start by performing factor analysis with a high number of values:
+
+```{r}
+#| label: first_fa
+#| warnings: false
+#| echo: true
+fa <- fa(data, nfactors = 8, rotate = "varimax") 
+print(fa$e.values, sort = TRUE, decreasing = TRUE)
+```
+There are 3 eigenvalues greater than 1.
+
+```{r}
+#| label: cumulative_var
+print(fa$Vaccounted, digits = 2)
+```
+However, 10 factors aren't enough to explain 80% of the variance (???)
+
+```{r}
+#| label: scree_plot
+scree(data, factors = FALSE)
+```
+
+```{r}
+fa_3_varimax <- fa(data,
+  nfactors = 6,
+  fm="pa",
+  rotate = "varimax")
+```
+
+```{r}
+fa.diagram(fa, errors = FALSE)
+```
+
+```{r}
+factor_scores <- factor.scores(f = fa_3_varimax, x = data)
+scores <- cbind(country_data, factor_scores$scores) %>% group_by(cntry) %>% summarize(PA1 = mean(PA1), PA2 = mean(PA2), PA3 = mean(PA3), PA4 = mean(PA4), PA5 = mean(PA5), PA6 = mean(PA6))
+```
+
+
+
+
+## Results
+
+## Discussion
+
+## Conclusions
+
+## References
