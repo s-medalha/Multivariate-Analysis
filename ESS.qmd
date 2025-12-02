@@ -42,7 +42,7 @@ raw_data <- read_excel("./dataset2.xlsx", range = cell_cols("A:YT"), sheet = 1)
 #| include: false
 #| warnings: false
 
-selected_vars <- c("idno", "cntry", "trstprl", "trstlgl", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt", "imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
+selected_vars <- c("cntry", "trstprl", "trstlgl", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt", "imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
 
 selected_vars1 <- c("trstprl", "trstlgl", "trstplc", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt")
 
@@ -70,9 +70,11 @@ data <- raw_data %>%
   select(-all_of(removed_vars))
 
 scaled_data <- data %>% 
-  select(-cntry, -idno) %>% 
+  select(-cntry) %>% 
   scale() %>% 
   as_tibble()
+
+data %>% count(cntry)
 ```
 
 
@@ -112,27 +114,46 @@ pcf <- principal(scaled_data, nfactors = 3, rotate = "varimax", scores = TRUE)
 print(pcf$loadings, cutoff = 0.6, digits = 3)
 #print(paf$Structure, digits = 2)
 ```
-
+Explicar porque standardizamos a média das observaçoes para cada país .
 
 
 ```{r}
-data_scores <- cbind(data[2], pcf$scores)
+data_scores <- cbind(data["cntry"], pcf$scores)
 
 country_means <- data_scores %>%
   group_by(cntry) %>%
   summarise(across(starts_with("RC"), mean)) %>% 
   rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3) %>%
   column_to_rownames("country") %>% 
-  scale()
+  summary()
+
+ggplot(country_means, aes(x=equality, y=immigration)) +
+  geom_point(alpha = 0.7) + 
+  labs (x = "Support for gender equality", y = "Support for immigration") +
+  theme_minimal()
+
+ggplot(country_means, aes(x=trust, y=immigration)) +
+  geom_point(alpha = 0.7) + 
+  labs (x = "Trust in institutions", y = "Support for immigration") +
+  theme_minimal()
+
+ggplot(country_means, aes(x=equality, y=trust)) +
+  geom_point(alpha = 0.7) + 
+  labs (x = "Support for gender equality", y = "Trust in institutions") +
+  theme_minimal()
 ```
 
 ```{r}
 #| label: hierarchical-cluster-analysis
 #| warning: false
 
-hc1 <- agnes(country_means, metric = "euclidean", method = "complete" )
+hc_ward <- agnes(country_means, metric = "euclidean", method = "ward" )
+hc_average <- agnes(country_means, metric = "euclidean", method = "average")
+hc_complete <- agnes(country_means, metric = "euclidean", method = "complete")
+hc_single <- agnes(country_means, metric = "euclidean", method = "single")
 
-fviz_dend(hc1, cex = 0.5, k = 6)
+
+fviz_dend(hc1, cex = 0.5, k = 5)
 ```
 
 
