@@ -23,8 +23,6 @@ library(tidyverse)
 library(readxl)
 library(psych)
 library(cluster)
-library(factoextra)
-library(dendextend)
 ```
 
 
@@ -43,8 +41,6 @@ raw_data <- read_excel("./dataset2.xlsx", range = cell_cols("A:YT"), sheet = 1)
 #| warnings: false
 
 selected_vars <- c("idno", "cntry", "trstprl", "trstlgl", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt", "imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
-
-selected_vars1 <- c("trstprl", "trstlgl", "trstplc", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt")
 
 reduced_scale_vars <- c("imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
 
@@ -92,10 +88,10 @@ We'll start by performing factor analysis with a high number of values:
   
 ```{r}
 #| label: first_fa
-#| warning: false
+#| warnings: false
 #| echo: true
 pcf <- principal(scaled_data, nfactors = length(scaled_data)) 
-paf <- fa(scaled_data, nfactors = length(scaled_data))
+paf <- fa(scaled_data, rotate = "varimax", nfactors = 5)
 ```
 
 ```{r}
@@ -106,7 +102,7 @@ scree(scaled_data, factors = FALSE)
 
 ```{r}
 #| label: second_fa
-#| warning: false
+#| warnings: false
 #| echo: true
 pcf <- principal(scaled_data, nfactors = 3, rotate = "varimax", scores = TRUE)
 print(pcf$loadings, cutoff = 0.6, digits = 3)
@@ -120,20 +116,9 @@ data_scores <- cbind(data[2], pcf$scores)
 
 country_means <- data_scores %>%
   group_by(cntry) %>%
-  summarise(across(starts_with("RC"), mean)) %>% 
-  rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3) %>%
-  column_to_rownames("country") %>% 
-  scale()
+  summarise(across(starts_with("RC"), mean))
 ```
 
-```{r}
-#| label: hierarchical-cluster-analysis
-#| warning: false
-
-hc1 <- agnes(country_means, metric = "euclidean", method = "complete" )
-
-fviz_dend(hc1, cex = 0.5, k = 6)
-```
 
 
 
