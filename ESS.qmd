@@ -88,16 +88,15 @@ data %>% count(cntry)
 #| warning: false
 KMO(scaled_data)
 ```
-After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(data)$MSA, digits = 2)`. This is classified as "meritorious", so we have an indication that factor analysis is suitable for this data set.
+After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(scaled_data)$MSA, digits = 2)`. This is classified as "meritorious", so we have an indication that factor analysis is suitable for this data set.
 
 We'll start by performing factor analysis with a high number of values:
   
 ```{r}
 #| label: first_fa
 #| warning: false
-#| echo: true
-pcf <- principal(scaled_data, nfactors = length(scaled_data)) 
-paf <- fa(scaled_data, nfactors = length(scaled_data))
+round(principal(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
+round(fa(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
 ```
 
 ```{r}
@@ -110,22 +109,27 @@ scree(scaled_data, factors = FALSE)
 #| label: second_fa
 #| warning: false
 #| echo: true
-pcf <- principal(scaled_data, nfactors = 3, rotate = "varimax", scores = TRUE)
-print(pcf$loadings, cutoff = 0.6, digits = 3)
-#print(paf$Structure, digits = 2)
+pcf_varimax <- principal(scaled_data, nfactors = 3, rotate = "varimax", scores = TRUE)
+pcf_quartimax <- principal(scaled_data, nfactors = 3, rotate = "quartimax")
+paf_varimax <- fa(scaled_data, nfactors = 3, rotate = "varimax")
+paf_quartimax <- fa(scaled_data, nfactors = 3, rotate = "quartimax")
+print(pcf_varimax$loadings, cutoff = 0.6, digits = 3)
+print(pcf_quartimax$loadings, cutoff = 0.6, digits = 3)
+print(paf_varimax$loadings, cutoff = 0.6, digits = 3)
+print(paf_quartimax$loadings, cutoff = 0.6, digits = 3)
 ```
 Explicar porque standardizamos a média das observaçoes para cada país .
 
 
 ```{r}
-data_scores <- cbind(data["cntry"], pcf$scores)
+data_scores <- cbind(data["cntry"], pcf_varimax$scores)
 
 country_means <- data_scores %>%
   group_by(cntry) %>%
   summarise(across(starts_with("RC"), mean)) %>% 
   rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3) %>%
   column_to_rownames("country") %>% 
-  summary()
+  scale()
 
 ggplot(country_means, aes(x=equality, y=immigration)) +
   geom_point(alpha = 0.7) + 
@@ -153,8 +157,9 @@ hc_complete <- agnes(country_means, metric = "euclidean", method = "complete")
 hc_single <- agnes(country_means, metric = "euclidean", method = "single")
 
 
-fviz_dend(hc1, cex = 0.5, k = 5)
+fviz_dend(hc_ward, cex = 0.5, k = 5)
 ```
+Ver várias métricas?
 
 
 

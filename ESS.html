@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Ana Rasinhas">
+<meta name="author" content="Daniela Gonçalves">
+<meta name="author" content="Pedro Fernandes">
+<meta name="author" content="Ricardo Branco">
+<meta name="author" content="Samuel Medalha">
+<meta name="dcterms.date" content="2025-12-02">
+
+<title>Multivariate Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="ESS_files/libs/clipboard/clipboard.min.js"></script>
+<script src="ESS_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="ESS_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="ESS_files/libs/quarto-html/popper.min.js"></script>
+<script src="ESS_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="ESS_files/libs/quarto-html/anchor.min.js"></script>
+<link href="ESS_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="ESS_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="ESS_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="ESS_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="ESS_files/libs/bootstrap/bootstrap-bb462d781dde1847d9e3ccf7736099dd.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Multivariate Analysis</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Authors</div>
+    <div class="quarto-title-meta-contents">
+             <p>Ana Rasinhas </p>
+             <p>Daniela Gonçalves </p>
+             <p>Pedro Fernandes </p>
+             <p>Ricardo Branco </p>
+             <p>Samuel Medalha </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">December 2, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="abstract" class="level2">
+<h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
+</section>
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+</section>
+<section id="methodology" class="level2">
+<h2 class="anchored" data-anchor-id="methodology">Methodology</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Kaiser-Meyer-Olkin factor adequacy
+Call: KMO(r = scaled_data)
+Overall MSA =  0.86
+MSA for each item = 
+trstprl trstlgl trstplt trstprt  trstep  trstun imbgeco imueclt imwbcnt imsmetn 
+   0.92    0.93    0.82    0.83    0.86    0.85    0.93    0.90    0.89    0.90 
+imdfetn impcntr eqwrkbg eqpolbg eqmgmbg eqpaybg 
+   0.83    0.87    0.91    0.79    0.77    0.89 </code></pre>
+</div>
+</div>
+<p>After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as 0.86. This is classified as “meritorious”, so we have an indication that factor analysis is suitable for this data set.</p>
+<p>We’ll start by performing factor analysis with a high number of values:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Principal Components Analysis
+Call: principal(r = scaled_data, nfactors = length(scaled_data))
+Standardized loadings (pattern matrix) based upon correlation matrix
+          RC2  RC3  RC4  RC5  RC9   RC6 RC10  RC7 RC12  RC8  RC1 RC13 RC11
+trstprl  0.65 0.07 0.06 0.17 0.03  0.02 0.09 0.28 0.07 0.03 0.08 0.13 0.65
+trstlgl  0.41 0.04 0.03 0.16 0.04  0.01 0.06 0.88 0.04 0.03 0.05 0.11 0.11
+trstplt  0.93 0.03 0.05 0.15 0.02  0.00 0.06 0.17 0.07 0.01 0.06 0.11 0.06
+trstprt  0.93 0.04 0.04 0.16 0.02 -0.01 0.05 0.14 0.06 0.00 0.05 0.12 0.03
+trstep   0.42 0.07 0.08 0.42 0.05  0.04 0.08 0.15 0.08 0.02 0.08 0.77 0.08
+trstun   0.34 0.08 0.07 0.88 0.03  0.04 0.07 0.16 0.06 0.04 0.07 0.22 0.07
+imbgeco  0.12 0.10 0.30 0.08 0.18  0.04 0.84 0.07 0.26 0.05 0.25 0.06 0.05
+imueclt  0.13 0.12 0.30 0.09 0.15  0.05 0.28 0.07 0.31 0.07 0.81 0.07 0.04
+imwbcnt  0.15 0.09 0.30 0.08 0.15  0.04 0.28 0.05 0.82 0.04 0.30 0.06 0.04
+imsmetn  0.03 0.07 0.39 0.03 0.88  0.03 0.15 0.04 0.12 0.06 0.12 0.03 0.01
+imdfetn  0.06 0.11 0.73 0.05 0.36  0.04 0.18 0.04 0.17 0.07 0.17 0.04 0.03
+impcntr  0.06 0.12 0.92 0.06 0.20  0.06 0.16 0.02 0.15 0.06 0.15 0.04 0.02
+eqwrkbg -0.01 0.28 0.06 0.03 0.03  0.94 0.03 0.00 0.03 0.16 0.03 0.02 0.01
+eqpolbg  0.06 0.91 0.10 0.05 0.05  0.18 0.07 0.03 0.05 0.17 0.06 0.04 0.03
+eqmgmbg  0.04 0.87 0.10 0.05 0.05  0.18 0.05 0.02 0.05 0.23 0.05 0.02 0.01
+eqpaybg  0.01 0.40 0.09 0.03 0.06  0.19 0.05 0.03 0.04 0.88 0.05 0.01 0.02
+         RC15  RC14  RC16 h2       u2 com
+trstprl  0.01  0.00  0.00  1  4.4e-16 2.7
+trstlgl  0.01  0.00  0.00  1  1.0e-15 1.6
+trstplt  0.01  0.00  0.25  1 -2.2e-16 1.4
+trstprt  0.01  0.00 -0.24  1 -6.7e-16 1.3
+trstep   0.01  0.00  0.00  1 -1.1e-15 2.5
+trstun   0.01  0.00  0.00  1 -4.4e-16 1.6
+imbgeco  0.03  0.00  0.00  1  1.3e-15 2.0
+imueclt  0.03  0.00  0.00  1  4.4e-16 2.2
+imwbcnt  0.03  0.00  0.00  1  5.6e-16 2.1
+imsmetn  0.04  0.00  0.00  1  3.3e-16 1.6
+imdfetn  0.46  0.00  0.00  1  3.3e-16 2.8
+impcntr -0.11  0.00  0.00  1  6.7e-16 1.4
+eqwrkbg  0.01  0.01  0.00  1  1.1e-16 1.3
+eqpolbg  0.02 -0.28  0.00  1  1.1e-16 1.4
+eqmgmbg  0.01  0.36  0.00  1 -2.2e-16 1.7
+eqpaybg  0.01  0.01  0.00  1  8.9e-16 1.6
+
+                       RC2  RC3  RC4  RC5  RC9  RC6 RC10  RC7 RC12  RC8  RC1
+SS loadings           2.67 1.91 1.86 1.09 1.05 1.00 0.98 0.96 0.93 0.91 0.91
+Proportion Var        0.17 0.12 0.12 0.07 0.07 0.06 0.06 0.06 0.06 0.06 0.06
+Cumulative Var        0.17 0.29 0.40 0.47 0.54 0.60 0.66 0.72 0.78 0.83 0.89
+Proportion Explained  0.17 0.12 0.12 0.07 0.07 0.06 0.06 0.06 0.06 0.06 0.06
+Cumulative Proportion 0.17 0.29 0.40 0.47 0.54 0.60 0.66 0.72 0.78 0.83 0.89
+                      RC13 RC11 RC15 RC14 RC16
+SS loadings           0.71 0.46 0.23 0.21 0.12
+Proportion Var        0.04 0.03 0.01 0.01 0.01
+Cumulative Var        0.94 0.96 0.98 0.99 1.00
+Proportion Explained  0.04 0.03 0.01 0.01 0.01
+Cumulative Proportion 0.94 0.96 0.98 0.99 1.00
+
+Mean item complexity =  1.8
+Test of the hypothesis that 16 components are sufficient.
+
+The root mean square of the residuals (RMSR) is  0 
+ with the empirical chi square  0  with prob &lt;  NA 
+
+Fit based upon off diagonal values = 1</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Factor Analysis using method =  minres
+Call: fa(r = scaled_data, nfactors = length(scaled_data))
+Standardized loadings (pattern matrix) based upon correlation matrix
+          MR4   MR1   MR2   MR3   MR5   MR6   MR7   MR8   MR9  MR11  MR10  MR12
+trstprl  0.01  0.01  0.04  0.00  0.01  0.82  0.01 -0.07  0.01 -0.01  0.08 -0.02
+trstlgl -0.01  0.00 -0.01  0.01  0.03  0.74 -0.01  0.09 -0.02  0.02 -0.11  0.02
+trstplt  0.00  0.01  0.93  0.00 -0.01  0.02  0.00 -0.02  0.00  0.00  0.01  0.00
+trstprt  0.00 -0.01  0.94  0.00  0.01 -0.01  0.00  0.02  0.00  0.00 -0.01  0.00
+trstep   0.00  0.01  0.03  0.01  0.83  0.03 -0.01  0.02  0.08 -0.05  0.07  0.00
+trstun   0.00  0.00  0.00  0.00  0.86  0.00  0.01 -0.02 -0.08  0.04 -0.06  0.00
+imbgeco  0.05  0.71  0.00  0.01  0.01  0.03  0.01  0.01  0.07  0.14  0.04  0.01
+imueclt  0.01  0.85  0.00  0.00  0.01  0.00  0.02 -0.01 -0.04 -0.01 -0.02 -0.07
+imwbcnt  0.00  0.88  0.01  0.00  0.00  0.00 -0.01  0.00  0.00 -0.06  0.00  0.05
+imsmetn  0.67  0.04  0.01 -0.01  0.01 -0.01  0.02  0.20  0.08  0.05  0.02  0.00
+imdfetn  0.97 -0.01  0.00  0.00  0.00  0.01  0.00 -0.01 -0.01 -0.04 -0.01 -0.04
+impcntr  0.80  0.04  0.00  0.03  0.01  0.00  0.01 -0.08 -0.02  0.05  0.01  0.07
+eqwrkbg  0.01 -0.01  0.00 -0.01  0.02 -0.01  0.65 -0.07  0.10 -0.04 -0.07  0.04
+eqpolbg  0.00  0.01  0.00  0.88  0.01  0.01  0.00 -0.03  0.08  0.02 -0.05 -0.06
+eqmgmbg  0.01  0.00  0.00  0.88  0.00 -0.01  0.03  0.03 -0.08 -0.02  0.05  0.06
+eqpaybg  0.01  0.02  0.00  0.06  0.00  0.02  0.68  0.06 -0.09  0.03  0.06 -0.04
+         MR15  MR13  MR14 MR16   h2    u2 com
+trstprl -0.03 -0.01 -0.01    0 0.79 0.210 1.0
+trstlgl  0.05  0.01  0.02    0 0.59 0.406 1.1
+trstplt  0.01 -0.02  0.03    0 0.90 0.104 1.0
+trstprt -0.01  0.01 -0.03    0 0.87 0.131 1.0
+trstep   0.00  0.04 -0.02    0 0.80 0.199 1.1
+trstun   0.00 -0.03  0.01    0 0.75 0.253 1.0
+imbgeco  0.03 -0.01  0.00    0 0.67 0.328 1.1
+imueclt  0.00  0.05  0.02    0 0.75 0.246 1.0
+imwbcnt -0.02 -0.04 -0.01    0 0.76 0.242 1.0
+imsmetn  0.02 -0.02  0.03    0 0.62 0.383 1.2
+imdfetn  0.02 -0.02 -0.01    0 0.91 0.085 1.0
+impcntr -0.05  0.04  0.00    0 0.75 0.252 1.1
+eqwrkbg -0.02  0.02  0.00    0 0.42 0.582 1.1
+eqpolbg -0.03 -0.01 -0.01    0 0.80 0.203 1.0
+eqmgmbg  0.03  0.01  0.01    0 0.85 0.155 1.0
+eqpaybg  0.01 -0.01  0.00    0 0.59 0.413 1.1
+
+                       MR4  MR1  MR2  MR3  MR5  MR6  MR7  MR8  MR9 MR11 MR10
+SS loadings           2.15 2.12 1.81 1.63 1.51 1.32 0.95 0.08 0.06 0.06 0.05
+Proportion Var        0.13 0.13 0.11 0.10 0.09 0.08 0.06 0.01 0.00 0.00 0.00
+Cumulative Var        0.13 0.27 0.38 0.48 0.58 0.66 0.72 0.72 0.73 0.73 0.73
+Proportion Explained  0.18 0.18 0.15 0.14 0.13 0.11 0.08 0.01 0.01 0.01 0.00
+Cumulative Proportion 0.18 0.36 0.51 0.65 0.78 0.89 0.97 0.98 0.99 0.99 0.99
+                      MR12 MR15 MR13 MR14 MR16
+SS loadings           0.02 0.02 0.01 0.01 0.00
+Proportion Var        0.00 0.00 0.00 0.00 0.00
+Cumulative Var        0.74 0.74 0.74 0.74 0.74
+Proportion Explained  0.00 0.00 0.00 0.00 0.00
+Cumulative Proportion 1.00 1.00 1.00 1.00 1.00
+
+ With factor correlations of 
+       MR4   MR1   MR2   MR3   MR5   MR6   MR7   MR8   MR9  MR11  MR10  MR12
+MR4   1.00  0.70  0.16  0.28  0.23  0.19  0.28  0.14  0.11  0.26  0.12  0.05
+MR1   0.70  1.00  0.31  0.29  0.36  0.35  0.26  0.05  0.08  0.24  0.11  0.06
+MR2   0.16  0.31  1.00  0.12  0.66  0.85  0.03 -0.05  0.05 -0.07  0.20 -0.05
+MR3   0.28  0.29  0.12  1.00  0.20  0.16  0.84  0.00 -0.10  0.10  0.08 -0.04
+MR5   0.23  0.36  0.66  0.20  1.00  0.69  0.15  0.00  0.04  0.05 -0.03  0.01
+MR6   0.19  0.35  0.85  0.16  0.69  1.00  0.10 -0.01  0.06  0.08  0.09 -0.10
+MR7   0.28  0.26  0.03  0.84  0.15  0.10  1.00  0.03 -0.07  0.10  0.05 -0.01
+MR8   0.14  0.05 -0.05  0.00  0.00 -0.01  0.03  1.00  0.03  0.14  0.01 -0.03
+MR9   0.11  0.08  0.05 -0.10  0.04  0.06 -0.07  0.03  1.00  0.01  0.03 -0.06
+MR11  0.26  0.24 -0.07  0.10  0.05  0.08  0.10  0.14  0.01  1.00 -0.07 -0.02
+MR10  0.12  0.11  0.20  0.08 -0.03  0.09  0.05  0.01  0.03 -0.07  1.00  0.07
+MR12  0.05  0.06 -0.05 -0.04  0.01 -0.10 -0.01 -0.03 -0.06 -0.02  0.07  1.00
+MR15 -0.02 -0.15 -0.22 -0.02 -0.03  0.10 -0.04  0.36 -0.12  0.03 -0.07 -0.04
+MR13  0.01  0.08 -0.10  0.04  0.11 -0.06  0.06 -0.08  0.00 -0.01  0.05  0.03
+MR14  0.06  0.08 -0.05 -0.10 -0.10  0.09  0.13  0.11 -0.08  0.11 -0.09  0.00
+MR16  0.00  0.00  0.00  0.00  0.00  0.00  0.00  0.00  0.00  0.00  0.00  0.00
+      MR15  MR13  MR14 MR16
+MR4  -0.02  0.01  0.06    0
+MR1  -0.15  0.08  0.08    0
+MR2  -0.22 -0.10 -0.05    0
+MR3  -0.02  0.04 -0.10    0
+MR5  -0.03  0.11 -0.10    0
+MR6   0.10 -0.06  0.09    0
+MR7  -0.04  0.06  0.13    0
+MR8   0.36 -0.08  0.11    0
+MR9  -0.12  0.00 -0.08    0
+MR11  0.03 -0.01  0.11    0
+MR10 -0.07  0.05 -0.09    0
+MR12 -0.04  0.03  0.00    0
+MR15  1.00 -0.03  0.10    0
+MR13 -0.03  1.00 -0.03    0
+MR14  0.10 -0.03  1.00    0
+MR16  0.00  0.00  0.00    1
+
+Mean item complexity =  1.1
+Test of the hypothesis that 16 factors are sufficient.
+
+df null model =  120  with the objective function =  10.34 with Chi Square =  292481.4
+df of  the model are -16  and the objective function was  0 
+
+The root mean square of the residuals (RMSR) is  0 
+The df corrected root mean square of the residuals is  NA 
+
+The harmonic n.obs is  28303 with the empirical chi square  0  with prob &lt;  NA 
+The total n.obs was  28303  with Likelihood Chi Square =  0  with prob &lt;  NA 
+
+Tucker Lewis Index of factoring reliability =  1
+Fit based upon off diagonal values = 1
+Measures of factor score adequacy             
+                                                   MR4  MR1  MR2  MR3  MR5  MR6
+Correlation of (regression) scores with factors   0.97 0.95 0.97 0.95 0.94 0.94
+Multiple R square of scores with factors          0.94 0.90 0.94 0.91 0.88 0.88
+Minimum correlation of possible factor scores     0.88 0.80 0.89 0.82 0.76 0.76
+                                                   MR7   MR8   MR9  MR11  MR10
+Correlation of (regression) scores with factors   0.89  0.46  0.45  0.46  0.45
+Multiple R square of scores with factors          0.79  0.21  0.20  0.21  0.20
+Minimum correlation of possible factor scores     0.58 -0.57 -0.60 -0.58 -0.60
+                                                   MR12  MR15  MR13  MR14 MR16
+Correlation of (regression) scores with factors    0.35  0.52  0.33  0.39    0
+Multiple R square of scores with factors           0.12  0.27  0.11  0.15    0
+Minimum correlation of possible factor scores     -0.76 -0.46 -0.78 -0.70   -1</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ESS_files/figure-html/scree_plot-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>pcf_varimax <span class="ot">&lt;-</span> <span class="fu">principal</span>(scaled_data, <span class="at">nfactors =</span> <span class="dv">3</span>, <span class="at">rotate =</span> <span class="st">"varimax"</span>, <span class="at">scores =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>pcf_quartimax <span class="ot">&lt;-</span> <span class="fu">principal</span>(scaled_data, <span class="at">nfactors =</span> <span class="dv">3</span>, <span class="at">rotate =</span> <span class="st">"quartimax"</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>paf_varimax <span class="ot">&lt;-</span> <span class="fu">fa</span>(scaled_data, <span class="at">nfactors =</span> <span class="dv">3</span>, <span class="at">rotate =</span> <span class="st">"varimax"</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>paf_quartimax <span class="ot">&lt;-</span> <span class="fu">fa</span>(scaled_data, <span class="at">nfactors =</span> <span class="dv">3</span>, <span class="at">rotate =</span> <span class="st">"quartimax"</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(pcf_varimax<span class="sc">$</span>loadings, <span class="at">cutoff =</span> <span class="fl">0.6</span>, <span class="at">digits =</span> <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Loadings:
+        RC2    RC1    RC3   
+trstprl  0.846              
+trstlgl  0.742              
+trstplt  0.885              
+trstprt  0.878              
+trstep   0.773              
+trstun   0.725              
+imbgeco         0.770       
+imueclt         0.770       
+imwbcnt         0.775       
+imsmetn         0.766       
+imdfetn         0.862       
+impcntr         0.830       
+eqwrkbg                0.703
+eqpolbg                0.853
+eqmgmbg                0.872
+eqpaybg                0.789
+
+                 RC2   RC1   RC3
+SS loadings    4.129 3.980 2.719
+Proportion Var 0.258 0.249 0.170
+Cumulative Var 0.258 0.507 0.677</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(pcf_quartimax<span class="sc">$</span>loadings, <span class="at">cutoff =</span> <span class="fl">0.6</span>, <span class="at">digits =</span> <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Loadings:
+        RC2    RC1    RC3   
+trstprl  0.846              
+trstlgl  0.742              
+trstplt  0.885              
+trstprt  0.878              
+trstep   0.773              
+trstun   0.725              
+imbgeco         0.772       
+imueclt         0.772       
+imwbcnt         0.777       
+imsmetn         0.768       
+imdfetn         0.865       
+impcntr         0.832       
+eqwrkbg                0.702
+eqpolbg                0.850
+eqmgmbg                0.869
+eqpaybg                0.786
+
+                 RC2   RC1   RC3
+SS loadings    4.130 4.017 2.681
+Proportion Var 0.258 0.251 0.168
+Cumulative Var 0.258 0.509 0.677</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(paf_varimax<span class="sc">$</span>loadings, <span class="at">cutoff =</span> <span class="fl">0.6</span>, <span class="at">digits =</span> <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Loadings:
+        MR2   MR1   MR3  
+trstprl 0.819            
+trstlgl 0.670            
+trstplt 0.879            
+trstprt 0.867            
+trstep  0.717            
+trstun  0.656            
+imbgeco       0.720      
+imueclt       0.724      
+imwbcnt       0.727      
+imsmetn       0.694      
+imdfetn       0.843      
+impcntr       0.794      
+eqwrkbg                  
+eqpolbg             0.833
+eqmgmbg             0.873
+eqpaybg             0.685
+
+                 MR2   MR1   MR3
+SS loadings    3.780 3.580 2.364
+Proportion Var 0.236 0.224 0.148
+Cumulative Var 0.236 0.460 0.608</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(paf_quartimax<span class="sc">$</span>loadings, <span class="at">cutoff =</span> <span class="fl">0.6</span>, <span class="at">digits =</span> <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Loadings:
+        MR2   MR1   MR3  
+trstprl 0.819            
+trstlgl 0.670            
+trstplt 0.879            
+trstprt 0.867            
+trstep  0.717            
+trstun  0.655            
+imbgeco       0.723      
+imueclt       0.728      
+imwbcnt       0.729      
+imsmetn       0.697      
+imdfetn       0.848      
+impcntr       0.799      
+eqwrkbg                  
+eqpolbg             0.828
+eqmgmbg             0.868
+eqpaybg             0.680
+
+                 MR2   MR1   MR3
+SS loadings    3.777 3.646 2.300
+Proportion Var 0.236 0.228 0.144
+Cumulative Var 0.236 0.464 0.608</code></pre>
+</div>
+</div>
+<p>Explicar porque standardizamos a média das observaçoes para cada país .</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ESS_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ESS_files/figure-html/unnamed-chunk-1-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ESS_files/figure-html/unnamed-chunk-1-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ESS_files/figure-html/hierarchical-cluster-analysis-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Ver várias métricas?</p>
+</section>
+<section id="results" class="level2">
+<h2 class="anchored" data-anchor-id="results">Results</h2>
+</section>
+<section id="discussion" class="level2">
+<h2 class="anchored" data-anchor-id="discussion">Discussion</h2>
+</section>
+<section id="conclusions" class="level2">
+<h2 class="anchored" data-anchor-id="conclusions">Conclusions</h2>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
