@@ -54,27 +54,27 @@ removed_vars <- c("stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "eqparep", 
 
 removed_countries <- c("IS", "IL", "ME", "NO", "RS", "CH", "UA", "GB")
 
-data <- raw_data %>% 
-  select(all_of(selected_vars)) %>% # select only some variables
-  filter(!cntry %in% removed_countries) %>%  # remove non-EU countries
-  mutate(across(all_of(selected_vars), ~if_else(. %in% c(77,88,99), NA, .))) %>% # set to NA when answer is unknown
-  mutate(across(all_of(reduced_scale_vars), ~if_else(. %in% c(7,8,9), NA, .))) %>% # set to NA when answer is unknown
-  na.omit() %>% # omit missing values
+data <- raw_data |> 
+  select(all_of(selected_vars)) |> # select only some variables
+  filter(!cntry %in% removed_countries) |>  # remove non-EU countries
+  mutate(across(all_of(selected_vars), ~if_else(. %in% c(77, 88, 99), NA, .))) |> # set to NA when answer is unknown
+  mutate(across(all_of(reduced_scale_vars), ~if_else(. %in% c(7,8,9), NA, .))) |> # set to NA when answer is unknown
+  na.omit() |> # omit missing values
   mutate(imsmetn = 5 - imsmetn, 
          imdfetn = 5 - imdfetn,
          impcntr = 5 - impcntr,
          eqparep = 6 - eqparep,
          eqparlv = 6 - eqparlv,
          freinsw = 6 - freinsw,
-         fineqpy = 6 - fineqpy) %>% # invert scale of some variables
+         fineqpy = 6 - fineqpy) |> # invert scale of some variables
   select(-all_of(removed_vars))
 
-scaled_data <- data %>% 
-  select(-cntry) %>% 
-  scale() %>% 
+scaled_data <- data |> 
+  select(-cntry) |> 
+  scale() |> 
   as_tibble()
 
-data %>% count(cntry)
+data |> count(cntry)
 ```
 
 
@@ -124,11 +124,11 @@ Explicar porque standardizamos a média das observaçoes para cada país .
 ```{r}
 data_scores <- cbind(data["cntry"], pcf_varimax$scores)
 
-country_means <- data_scores %>%
-  group_by(cntry) %>%
-  summarise(across(starts_with("RC"), mean)) %>% 
-  rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3) %>%
-  column_to_rownames("country") %>% 
+country_means <- data_scores |>
+  group_by(cntry) |>
+  summarise(across(starts_with("RC"), mean)) |> 
+  rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3) |>
+  column_to_rownames("country") |>
   scale()
 
 ggplot(country_means, aes(x=equality, y=immigration)) +
@@ -136,14 +136,14 @@ ggplot(country_means, aes(x=equality, y=immigration)) +
   labs (x = "Support for gender equality", y = "Support for immigration") +
   theme_minimal()
 
-ggplot(country_means, aes(x=trust, y=immigration)) +
+ggplot(country_means, aes(x = trust, y = immigration)) +
   geom_point(alpha = 0.7) + 
   labs (x = "Trust in institutions", y = "Support for immigration") +
   theme_minimal()
 
-ggplot(country_means, aes(x=equality, y=trust)) +
+ggplot(country_means, aes(x = equality, y = trust)) +
   geom_point(alpha = 0.7) + 
-  labs (x = "Support for gender equality", y = "Trust in institutions") +
+  labs(x = "Support for gender equality", y = "Trust in institutions") +
   theme_minimal()
 ```
 
@@ -151,7 +151,7 @@ ggplot(country_means, aes(x=equality, y=trust)) +
 #| label: hierarchical-cluster-analysis
 #| warning: false
 
-hc_ward <- agnes(country_means, metric = "euclidean", method = "ward" )
+hc_ward <- agnes(country_means, metric = "euclidean", method = "ward")
 hc_average <- agnes(country_means, metric = "euclidean", method = "average")
 hc_complete <- agnes(country_means, metric = "euclidean", method = "complete")
 hc_single <- agnes(country_means, metric = "euclidean", method = "single")
