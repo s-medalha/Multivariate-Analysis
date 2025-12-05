@@ -8,11 +8,11 @@ author:
   - Samuel Medalha
 date: last-modified
 format:
-  pdf: default
+  typst: default
 execute:
   echo: false
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 ```{r}
@@ -108,7 +108,7 @@ scree(scaled_data, factors = FALSE)
 ```{r}
 #| label: second_fa
 #| warning: false
-#| echo: true
+
 pcf_varimax <- principal(scaled_data, nfactors = 3, rotate = "varimax", scores = TRUE)
 pcf_quartimax <- principal(scaled_data, nfactors = 3, rotate = "quartimax")
 paf_varimax <- fa(scaled_data, nfactors = 3, rotate = "varimax")
@@ -122,14 +122,13 @@ Explicar porque standardizamos a média das observaçoes para cada país .
 
 
 ```{r}
-data_scores <- cbind(data["cntry"], pcf_varimax$scores)
+data_scores <- cbind(data["cntry"], scale(pcf_varimax$scores))
 
 country_means <- data_scores |>
   group_by(cntry) |>
   summarise(across(starts_with("RC"), mean)) |> 
-  rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3) |>
-  column_to_rownames("country") |>
-  scale()
+  rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3)
+  
 
 ggplot(country_means, aes(x=equality, y=immigration)) +
   geom_point(alpha = 0.7) + 
