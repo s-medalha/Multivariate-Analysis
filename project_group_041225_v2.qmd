@@ -1,0 +1,942 @@
+---
+title: "Multivariate Analysis"
+author:
+  - Ana Rasinhas
+  - Daniela Gonçalves
+  - Pedro Fernandes
+  - Ricardo Branco
+  - Samuel Medalha
+date: last-modified
+format:
+  pdf: default
+execute:
+  echo: false
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(readxl)
+library(psych)
+library(cluster)
+library(factoextra)
+library(dendextend)
+library(ggrepel)
+library(ca)
+library(FactoMineR)
+library(reshape2)
+```
+
+
+```{r}
+#| label: import-data
+#| include: false
+#| warnings: false
+
+raw_data <- read.csv("C:/Users/ricardo.branco/Downloads/ESS11e04_0.csv")
+
+```
+
+```{r}
+#| label: data-processing
+#| include: false
+#| warnings: false
+
+selected_vars <- c("cntry", "trstprl", "trstlgl", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt", "imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
+
+selected_vars1 <- c("trstprl", "trstlgl", "trstplc", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt")
+
+reduced_scale_vars <- c("imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
+
+inverted_vars <- c("imsmetn", "imdfetn", "impcntr", "eqparep", "eqparlv", "freinsw", "fineqpy")
+
+removed_vars <- c("stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "eqparep", "eqparlv", "freinsw", "fineqpy")
+
+removed_countries <- c("IS", "IL", "ME", "NO", "RS", "CH", "UA", "GB")
+
+data <- raw_data |> 
+  select(all_of(selected_vars)) |> # select only some variables
+  filter(!cntry %in% removed_countries) |>  # remove non-EU countries
+  mutate(across(all_of(selected_vars), ~if_else(. %in% c(77, 88, 99), NA, .))) |> # set to NA when answer is unknown
+  mutate(across(all_of(reduced_scale_vars), ~if_else(. %in% c(7,8,9), NA, .))) |> # set to NA when answer is unknown
+  na.omit() |> # omit missing values
+  mutate(imsmetn = 5 - imsmetn, 
+         imdfetn = 5 - imdfetn,
+         impcntr = 5 - impcntr,
+         eqparep = 6 - eqparep,
+         eqparlv = 6 - eqparlv,
+         freinsw = 6 - freinsw,
+         fineqpy = 6 - fineqpy) |> # invert scale of some variables
+  select(-all_of(removed_vars))
+
+scaled_data <- data |> 
+  select(-cntry) |> 
+  scale() |> 
+  as_tibble()
+
+data |> count(cntry)
+```
+
+
+## Abstract
+
+## Introduction
+
+## Methodology
+```{r}
+#| label: KMO
+#| warning: false
+KMO(scaled_data)
+```
+After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(scaled_data)$MSA, digits = 2)`. This is classified as "meritorious", so we have an indication that factor analysis is suitable for this data set.
+
+We'll start by performing factor analysis with a high number of values:
+  
+```{r}
+#| label: first_fa
+#| warning: false
+round(principal(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
+round(fa(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
+```
+
+```{r}
+#| label: scree_plot
+scree(scaled_data, factors = FALSE)
+```
+
+
+```{r}
+pcf_varimax <- principal(scaled_data, nfactors = 3, method = "cov", rotate = "varimax", scores = TRUE ) # cov? or cor?
+pcf_quartimax <- principal(scaled_data, nfactors = 3, method = "cov", rotate = "quartimax")
+paf_varimax <- fa(scaled_data, nfactors = 3, rotate = "varimax")
+paf_quartimax <- fa(scaled_data, nfactors = 3, rotate = "quartimax")
+print(pcf_varimax$loadings, cutoff = 0.6, digits = 3)
+print(pcf_quartimax$loadings, cutoff = 0.6, digits = 3)
+print(paf_varimax$loadings, cutoff = 0.6, digits = 3)
+print(paf_quartimax$loadings, cutoff = 0.6, digits = 3)
+```
+Explicar porque standardizamos a média das observaçoes para cada país .
+
+
+```{r}
+data_scores2 <- cbind(data["cntry"], pcf_varimax$scores)
+
+country_means2 <- data_scores2  %>% 
+  group_by(cntry)  %>% 
+  summarise(across(starts_with("RC"), mean))  %>%  
+  rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3)  %>% 
+  column_to_rownames("country") %>% 
+  scale() %>%
+  as.data.frame()
+
+#new features like country labels and sample size
+country_means2$country <- rownames(country_means2)
+
+sample_size <- data %>%
+  count(cntry, name = "n") %>% 
+  rename(country = cntry)
+
+country_means2 <- country_means2 %>%
+  left_join(sample_size, by = "country")
+
+```
+
+```{r}
+#| label: R-squared-function
+#| include: false
+
+numeric_data <- country_means2[ , -1, drop = FALSE]
+
+numeric_data <- scale(numeric_data)
+
+RSquared <- function(distance, method, k){
+  # Get vector with mean of each variable
+  centroid <- colMeans(numeric_data)
+  # Get total SS
+  SSt <- sum(apply(numeric_data, 1, function(row) sum((row - centroid)^2)))
+  # Get distance matrix
+  dist_matrix <- dist(numeric_data, method = distance)
+  # Hierarchical clustering
+  hc <- hclust(dist_matrix, method = method)
+  # Cut dendrogram with k clusters
+  cut <- cutree(hc, k = k)
+  SSw <- 0
+  for(i in 1:k) {
+    # Get indices of countries in cluster i
+    cluster_indices <- which(cut == i)
+    
+    if(length(cluster_indices) > 0) {
+      # Get data for this cluster
+      cluster_data <- numeric_data[cluster_indices, , drop = FALSE]
+      
+      # Calculate cluster mean
+      cluster_mean <- colMeans(cluster_data)
+      
+      # Weighted squared distance from cluster centroid
+      SSw <- SSw + sum(apply(cluster_data, 1, function(row) 
+      sum((row - cluster_mean)^2)))
+    }
+  }
+  1-(SSw/SSt)
+}
+```
+
+```{r}
+#| label: R-squared-plot
+
+methods <- c("ward.D", "average", "complete", "single")
+
+plot_data <- do.call(rbind, lapply(methods, function(method) {
+  data.frame(
+    k = 1:10,
+    R_squared = sapply(1:10, function(k) {
+      RSquared("euclidean", method, k)
+    }),
+    Method = method
+  )
+}))
+
+  ggplot(plot_data, aes(x = k, y = R_squared, color = Method)) +
+    geom_line(size = 0.5) +
+    geom_point(size = 1) +
+    coord_cartesian(ylim = c(0, 1)) +
+    scale_x_continuous(breaks = k_values) +
+    scale_y_continuous(breaks = (0:10)/10) +
+    labs(title = "Comparison of different hierarchical clustering methods", x = "Number of clusters", y = "R-squared")
+
+
+
+
+
+
+```{r}
+my_theme <- function(base_size = 12) {
+  theme_minimal(base_size = base_size) +
+    theme(
+      # Customizing the title and subtitle
+      plot.title = element_text(face = "bold", size = 14, margin = margin(b = 10)),
+      plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15)),
+      # Grid line cleanup
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(linetype = "dotted", color = "gray85"),
+      # Axis line customization
+      axis.line = element_line(color = "gray80"),
+      # Legend position
+      legend.position = "bottom",
+      # Caption formatting
+      plot.caption = element_text(hjust = 0, color = "gray50", size = 9, margin = margin(t = 15)),
+      # Panel background and spacing
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background = element_rect(fill = "white", color = NA)
+    )
+}
+
+```
+
+```{r}
+#faceting 1
+
+pairs_df <- country_means2 %>%
+  mutate(id = row_number()) %>%
+  crossing(
+    tibble(var1 = c("equality", "equality", "immigration"),
+           var2 = c("immigration", "trust", "trust"))
+  ) %>%
+  mutate(
+    value1 = case_when(
+      var1 == "equality" ~ equality,
+      var1 == "immigration" ~ immigration,
+      var1 == "trust" ~ trust
+    ),
+    value2 = case_when(
+      var2 == "equality" ~ equality,
+      var2 == "immigration" ~ immigration,
+      var2 == "trust" ~ trust
+    )
+  ) %>%
+  select(id, country, var1, var2, value1, value2)
+
+pairs_df <- pairs_df %>%
+  mutate(pair = paste(var1, "vs", var2))
+
+reference_lines <- tibble(
+  pair = c("equality vs immigration", "equality vs trust", "immigration vs trust"),
+  var1 = c("equality", "equality", "immigration"),
+  var2 = c("immigration", "trust", "trust")
+) %>%
+  mutate(
+    # Horizontal intercept (mean of var2)
+    h_intercept = case_when(
+      var2 == "immigration" ~ mean(country_means2$immigration, na.rm = TRUE),
+      var2 == "trust" ~ mean(country_means2$trust, na.rm = TRUE),
+      var2 == "equality" ~ mean(country_means2$equality, na.rm = TRUE)
+    ),
+    # Vertical intercept (mean of var1)
+    v_intercept = case_when(
+      var1 == "immigration" ~ mean(country_means2$immigration, na.rm = TRUE),
+      var1 == "trust" ~ mean(country_means2$trust, na.rm = TRUE),
+      var1 == "equality" ~ mean(country_means2$equality, na.rm = TRUE)
+    )
+  )
+
+facet_plot <- ggplot(pairs_df, aes(x = value1, y = value2, color = pair)) +
+  
+  geom_hline(data = reference_lines, aes(yintercept = h_intercept),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  geom_vline(data = reference_lines, aes(xintercept = v_intercept),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_text_repel(aes(label = country), size = 3.5, show.legend = FALSE) +
+  facet_wrap(~ pair) +
+  coord_equal() +
+  scale_color_manual(values = c(  # Add 'values ='
+    "equality vs immigration" = "#E69F00",
+    "equality vs trust" = "#009E73",
+    "immigration vs trust" = "#0072B2"
+  ))+
+  
+  labs(
+    title = "Pairwise Country Comparisons Across Dimensions",
+    x = NULL,
+    y = NULL
+  ) +
+  
+  my_theme() +
+  theme(legend.position = "none")
+
+print(facet_plot)
+```
+```{r}
+colnames(pcf_varimax$loadings) <- c("Trust","Immigration", "Equality")
+fa.diagram(pcf_varimax)
+
+```
+
+```{r}
+loadings_df <- as.data.frame(pcf_varimax$loadings[,])
+loadings_df$variable <- rownames(loadings_df)
+
+# Reshape to long format
+loadings_long <- pivot_longer(loadings_df, 
+                              cols = -variable, 
+                              names_to = "Component", 
+                              values_to = "Loading")
+
+# Create a better visualization
+ggplot(loadings_long, aes(x = Component, y = variable, fill = Loading)) +
+  geom_tile() +
+  geom_text(aes(label = round(Loading, 2)), size = 3) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", 
+                       midpoint = 0) +
+  theme_minimal() +
+  labs(title = "Component Loadings Heatmap",
+       x = "Components", y = "Variables")
+```
+
+
+
+
+CLUSTER ANALYSIS STARTS HERE!!!
+
+```{r}
+# 1. Prepare data (select only numeric variables for clustering)
+cluster_data <- country_means2[, c("trust", "immigration", "equality")]
+rownames(cluster_data) <- country_means2$country
+
+# 2. Hierarchical methods to determine number of clusters
+
+# Ward method
+hc_ward <- agnes(cluster_data, metric = "euclidean", method = "ward")
+
+# Average method
+hc_average <- agnes(cluster_data, metric = "euclidean", method = "average")
+
+# Complete method
+hc_complete <- agnes(cluster_data, metric = "euclidean", method = "complete")
+
+# Single method
+hc_single <- agnes(cluster_data, metric = "euclidean", method = "single")
+
+
+print(hc_ward$ac)
+print(hc_average$ac)
+print(hc_complete$ac)
+print(hc_single$ac)
+
+
+pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+rect.hclust(hc_ward, k = 5, border = "red")
+
+pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+rect.hclust(hc_ward, k = 4, border = "red")
+
+fviz_nbclust(cluster_data, kmeans, method = "wss")
+
+fviz_nbclust(cluster_data, kmeans, method = "silhouette")
+```
+
+```{r}
+#Random k-means
+set.seed(123) #for replicability
+
+kmeans_result <- kmeans(cluster_data, centers = 5, nstart = 25, iter.max = 100) # nstart = different initial positions; 
+
+print(kmeans_result)
+
+country_clusters <- country_means2
+country_clusters$cluster <- as.factor(kmeans_result$cluster)
+
+```
+
+```{r}
+#deterministic k-means using hierarchical method
+hcward <- agnes(cluster_data, method = "ward")
+
+groups_hcward <- cutree(as.hclust(hcward), k = 5) #cut the tree into 5 clusters (k)
+
+initial_centers <- aggregate(cluster_data, by = list(groups_hcward), FUN = mean) #compute deterministic initial centroids
+
+initial_centers <- initial_centers[ ,-1] # remove group label column
+
+#compute k-means
+kmeans_result_d <- kmeans(cluster_data, centers = initial_centers, iter.max = 100)
+
+#merge to data
+country_clusters_d <- country_means2
+country_clusters_d$cluster <- as.factor(kmeans_result_d$cluster)
+
+print(kmeans_result_d$centers)
+print(table(country_clusters_d$cluster))
+```
+
+```{r}
+#Compare methods random vs deterministic
+# Compare cluster assignments
+comparison <- data.frame(
+  country = rownames(cluster_data),
+  hierarchical_kmeans = kmeans_result_d$cluster,
+  random_kmeans = kmeans_result$cluster
+) %>% 
+  arrange(hierarchical_kmeans, random_kmeans)
+
+# Check agreement
+print(comparison)
+write_csv(comparison, "C:/Users/ricardo.branco/Downloads/comparison.csv")
+
+# Within-cluster sum of squares (lower is better)
+cat("Deterministic total WSS:", kmeans_result_d$tot.withinss, "\n")
+cat("Random total WSS:", kmeans_result$tot.withinss, "\n")
+
+
+```
+
+
+
+
+```{r}
+#Prepare data for visualization
+#1.color uniformity
+cluster_colors <- c(
+  "1" = "#E69F00",
+  "2" = "#0072B2",
+  "3" = "#009E73",
+  "4" = "#D55E00",
+  "5" = "#CC79A7"
+)
+
+```
+
+```{r}
+#faceting 2
+
+pairs_df2 <- country_clusters_d %>%
+  mutate(id = row_number()) %>%
+  crossing(
+    tibble(var1 = c("equality", "equality", "immigration"),
+           var2 = c("immigration", "trust", "trust"))
+  ) %>%
+  mutate(
+    value1 = case_when(
+      var1 == "equality" ~ equality,
+      var1 == "immigration" ~ immigration,
+      var1 == "trust" ~ trust
+    ),
+    value2 = case_when(
+      var2 == "equality" ~ equality,
+      var2 == "immigration" ~ immigration,
+      var2 == "trust" ~ trust
+    )
+  ) %>%
+  select(id, country, cluster, var1, var2, value1, value2)
+
+facet_plot_2 <- ggplot(pairs_df2, 
+                     aes(x = value1, y = value2, color = cluster)) +
+  
+  geom_hline(yintercept = mean(country_means$trust),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  geom_vline(xintercept = mean(country_means$equality),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+
+  geom_point(size = 3, alpha = 0.7) +
+  geom_text_repel(aes(label = country, color = cluster), size = 3) +
+
+  facet_wrap(~ paste(var1, "vs", var2)) +
+  coord_equal()+
+  scale_color_manual(values = cluster_colors) +
+  
+  labs(
+    title = "Pairwise Country Comparisons Across Dimensions",
+    x = NULL,
+    y = NULL,
+    color = "Cluster"
+  ) +
+  
+  my_theme()
+
+print(facet_plot_2)
+
+```
+
+
+
+
+```{r}
+# Define Lookup and Cluster Data ---
+
+# Revised lookup table with all 22 countries
+country_lookup <- data.frame(
+  country = c("AT", "BE", "BG", "CY", "DE", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LV", "NL", "PL", "PT", "SE", "SI", "SK"),
+  map_region = c("Austria", "Belgium", "Bulgaria", "Cyprus", "Germany", "Estonia", "Spain", "Finland", "France", "Greece", "Croatia", "Hungary", "Ireland", "Italy", "Lithuania", "Latvia", "Netherlands", "Poland", "Portugal", "Sweden", "Slovenia", "Slovakia")
+)
+
+# Data Merging and Preparation ---
+# Get Europe map data
+europe_map <- map_data("world")
+
+# Merge your data with the lookup
+country_clusters_full <- merge(country_clusters_d, country_lookup, by = "country")
+
+# Merge with map data
+europe_map <- merge(europe_map, country_clusters_full, by.x = "region", by.y = "map_region", all.x = TRUE)
+
+# Filter to only show countries in your dataset
+europe_map <- europe_map %>% filter(region %in% country_lookup$map_region)
+
+europe_map <- europe_map %>%
+  dplyr::arrange(group, order, long)
+
+# Create the Map ---
+
+ggplot(europe_map, aes(x = long, y = lat, group = group, fill = cluster)) +
+  geom_polygon(color = "white", linewidth = 0.25) +
+  scale_fill_manual(values = cluster_colors, name = "Clusters", na.value = "lightgray") +
+  # Adjusted limits to better frame the entire region
+  coord_fixed(1.3, xlim = c(-15, 35), ylim = c(32, 72)) +
+  theme_void() +
+  labs(title = "European Countries by Cluster", subtitle = "Based on trust, immigration, and equality attitudes") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold", margin = margin(b = 5)),
+    plot.subtitle = element_text(hjust = 0.5, size = 11, margin = margin(b = 15)),
+    legend.position = "bottom",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9)
+  )
+```
+
+STARTS HERE the CORRESPONDENCE ANALYSIS
+
+
+```{r}
+
+pt_df_ca <- raw_data %>%
+  filter(cntry == "PT") %>%
+  filter(icgndra %in% c(1, 2)) %>%
+  filter(agea <= 99) %>% 
+  filter(
+    # Trust variables (0-10 scale)
+    trstprl %in% 0:10, trstlgl %in% 0:10, trstplt %in% 0:10, 
+    trstprt %in% 0:10, trstep %in% 0:10, trstun %in% 0:10,
+    # Immigration variables (0-10 scale)
+    imbgeco %in% 0:10, imueclt %in% 0:10, imwbcnt %in% 0:10,
+    # Immigration variables (1-4 scale)
+    imsmetn %in% 1:4, imdfetn %in% 1:4, impcntr %in% 1:4,
+    # Equality variables (depends on their scale)
+    eqwrkbg %in% 1:6, eqpolbg %in% 1:6, eqmgmbg %in% 1:6, eqpaybg %in% 1:6  # selecting only obs values
+  ) %>% 
+  mutate(icgndra = factor(icgndra, levels = c(1, 2), labels = c("Male", "Female"))) %>%
+  select(
+    #country
+    cntry,
+    #Gender
+    icgndra,
+    # Age variable
+    agea,
+    # Trust variables
+    trstprl, trstlgl, trstplt, trstprt, trstep, trstun,
+    # Immigration variables
+    imbgeco, imueclt, imwbcnt, imsmetn, imdfetn, impcntr,
+    # Equality variables
+    eqwrkbg, eqpolbg, eqmgmbg, eqpaybg
+  ) %>%
+    na.omit() |> # omit missing values
+    mutate(imsmetn = 5 - imsmetn, 
+         imdfetn = 5 - imdfetn,
+         impcntr = 5 - impcntr
+        ) # invert scale of some variables
+
+
+hist(pt_df_ca$agea, main = "Age Distribution in Portugal plus France", 
+     xlab = "Age", col = "#0072B2", breaks = 10)
+
+
+
+
+```
+
+```{r}
+pt_df_ca <- pt_df_ca %>%
+  mutate(
+    age_group = case_when(
+      agea < 30 ~ "15-29",
+      agea >= 30 & agea < 45 ~ "30-44",
+      agea >= 45 & agea < 60 ~ "45-59",
+      agea >= 60 ~ "60+"
+    ),
+    age_group = factor(age_group, levels = c("18-29", "30-44", "45-59", "60+"))
+  )
+
+# Check distribution
+table(pt_df_ca$age_group)
+```
+
+```{r}
+# Extract loadings matrix
+loadings_matrix <- pcf_varimax$loadings[, c("RC1", "RC2", "RC3")]
+
+# Create loadings vectors, keeping only values > 0.5, rest = 0
+rc1 <- ifelse(abs(loadings_matrix[, "RC1"]) > 0.5, loadings_matrix[, "RC1"], 0)
+rc2 <- ifelse(abs(loadings_matrix[, "RC2"]) > 0.5, loadings_matrix[, "RC2"], 0)
+rc3 <- ifelse(abs(loadings_matrix[, "RC3"]) > 0.5, loadings_matrix[, "RC3"], 0)
+
+# Show which variables are used for each factor
+data.frame(
+  variable = rownames(loadings_matrix),
+  RC1_immigration = rc1,
+  RC2_trust = rc2,
+  RC3_equality = rc3)
+
+# Now compute weighted indices
+fa_vars <- pt_df_ca[, rownames(loadings_matrix)]
+fa_vars <- as.matrix(sapply(fa_vars, as.numeric))
+
+pt_df_ca <- pt_df_ca %>%
+  mutate(
+    immigration = fa_vars %*% rc1,
+    trust = fa_vars %*% rc2,
+    equality = fa_vars %*% rc3
+  )
+
+
+pt_df_ca <- pt_df_ca %>%
+  mutate(
+    trust_cat = cut(trust,
+                    breaks = unique(quantile(trust, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)),
+                    include.lowest = TRUE,
+                    labels = c("Very Weak", "Weak", "Strong", "Very Strong")[1:(length(unique(quantile(trust, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)))-1)]),
+    
+    immigration_cat = cut(immigration,
+                          breaks = unique(quantile(immigration, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)),
+                          include.lowest = TRUE,
+                          labels = c("Very Weak", "Weak", "Strong", "Very Strong")[1:(length(unique(quantile(immigration, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)))-1)]),
+    
+    equality_cat = cut(equality,
+                       breaks = unique(quantile(equality, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)),
+                       include.lowest = TRUE,
+                       labels = c("Very Weak", "Weak", "Strong", "Very Strong")[1:(length(unique(quantile(equality, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)))-1)]),
+    
+    age_group = paste(age_group, " (", cntry, ", ", icgndra, ")")
+  )
+```
+
+```{r}
+tab <- table(pt_df_ca$age_group, pt_df_ca$trust_cat)
+
+ca_result <- CA(tab, graph = FALSE)
+
+# Scree plot
+fviz_screeplot(ca_result)
+
+# Biplot with labels
+fviz_ca_biplot(ca_result, repel = TRUE)
+
+# Row factor map
+fviz_ca_row(ca_result, repel = TRUE)
+
+# Column factor map
+fviz_ca_col(ca_result, repel = TRUE)
+```
+
+```{r}
+
+# Your contingency table
+tab <- table(pt_df_ca$age_group, pt_df_ca$immigration_cat)
+
+# Perform Correspondence Analysis
+ca_result <- CA(tab, graph = FALSE)
+
+# Observed values
+observed <- tab
+
+# Expected values under independence
+expected <- chisq.test(tab)$expected
+
+# Combine observed and expected in a single data frame for comparison
+comparison_df <- data.frame(
+  Row = rep(rownames(observed), times = ncol(observed)),
+  Column = rep(colnames(observed), each = nrow(observed)),
+  Observed = as.vector(observed),
+  Expected = as.vector(expected) 
+)
+
+comparison_df <- comparison_df %>% 
+    mutate(Diff = comparison_df$Observed - comparison_df$Expected ) %>% 
+    arrange(Diff) %>% 
+    print(n = 10)
+
+# Create a heatmap of the difference
+ggplot(comparison_df, aes(x = Column, y = Row, fill = Diff)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  geom_text(aes(label = Observed), color = "black") +
+  theme_minimal() +
+  labs(title = "Observed vs Expected (Difference) Heatmap",
+       fill = "Observed - Expected")
+```
+
+
+## Results
+
+## Discussion
+
+## Conclusions
+
+## References
+
+## Appendix
+
+
+CLUSTER 4 ANALYSIS STARTS HERE!!!
+
+```{r}
+# 1. Prepare data (select only numeric variables for clustering)
+cluster_data <- country_means2[, c("trust", "immigration", "equality")]
+rownames(cluster_data) <- country_means2$country
+
+# 2. Hierarchical methods to determine number of clusters
+
+# Ward method
+hc_ward <- agnes(cluster_data, metric = "euclidean", method = "ward")
+
+# Average method
+hc_average <- agnes(cluster_data, metric = "euclidean", method = "average")
+
+# Complete method
+hc_complete <- agnes(cluster_data, metric = "euclidean", method = "complete")
+
+# Single method
+hc_single <- agnes(cluster_data, metric = "euclidean", method = "single")
+
+
+print(hc_ward$ac)
+print(hc_average$ac)
+print(hc_complete$ac)
+print(hc_single$ac)
+
+
+pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+rect.hclust(hc_ward, k = 5, border = "red")
+
+pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+rect.hclust(hc_ward, k = 4, border = "red")
+
+fviz_nbclust(cluster_data, kmeans, method = "wss")
+
+fviz_nbclust(cluster_data, kmeans, method = "silhouette")
+```
+
+```{r}
+#Random k-means
+set.seed(123) #for replicability
+
+kmeans_result_4 <- kmeans(cluster_data, centers = 4, nstart = 25, iter.max = 100) # nstart = different initial positions; 
+
+print(kmeans_result_4)
+
+country_clusters_4 <- country_means2
+country_clusters$cluster <- as.factor(kmeans_result_4$cluster)
+
+```
+
+```{r}
+#deterministic k-means using hierarchical method
+hcward4 <- agnes(cluster_data, method = "ward")
+
+groups_hcward4 <- cutree(as.hclust(hcward4), k = 4) #cut the tree into 5 clusters (k)
+
+initial_centers4 <- aggregate(cluster_data, by = list(groups_hcward4), FUN = mean) #compute deterministic initial centroids
+
+initial_centers4 <- initial_centers4[ ,-1] # remove group label column
+
+#compute k-means
+kmeans_result_d4 <- kmeans(cluster_data, centers = initial_centers4, iter.max = 100)
+
+#merge to data
+country_clusters_d4 <- country_means2
+country_clusters_d4$cluster <- as.factor(kmeans_result_d4$cluster)
+
+print(kmeans_result_d4$centers)
+print(table(country_clusters_d4$cluster))
+```
+
+```{r}
+#Compare methods random vs deterministic
+# Compare cluster assignments
+comparison4 <- data.frame(
+  country = rownames(cluster_data),
+  hierarchical_kmeans4 = kmeans_result_d4$cluster,
+  random_kmeans4 = kmeans_result_4$cluster
+) %>% 
+  arrange(hierarchical_kmeans4, random_kmeans4)
+
+# Check agreement
+print(comparison4)
+write_csv(comparison4, "C:/Users/ricardo.branco/Downloads/comparison4.csv")
+
+# Within-cluster sum of squares (lower is better)
+cat("Deterministic total WSS:", kmeans_result_d4$tot.withinss, "\n")
+cat("Random total WSS:", kmeans_result4$tot.withinss, "\n")
+```
+
+```{r}
+#Prepare data for visualization
+#1.color uniformity
+cluster_colors4 <- c(
+  "1" = "#E69F00",
+  "2" = "#0072B2",
+  "3" = "#009E73",
+  "4" = "#D55E00"
+)
+```
+
+```{r}
+#faceting 2
+
+pairs_df2_4 <- country_clusters_d4 %>%
+  mutate(id = row_number()) %>%
+  crossing(
+    tibble(var1 = c("equality", "equality", "immigration"),
+           var2 = c("immigration", "trust", "trust"))
+  ) %>%
+  mutate(
+    value1 = case_when(
+      var1 == "equality" ~ equality,
+      var1 == "immigration" ~ immigration,
+      var1 == "trust" ~ trust
+    ),
+    value2 = case_when(
+      var2 == "equality" ~ equality,
+      var2 == "immigration" ~ immigration,
+      var2 == "trust" ~ trust
+    )
+  ) %>%
+  select(id, country, cluster, var1, var2, value1, value2)
+
+
+facet_plot_2_4 <- ggplot(pairs_df2_4, 
+                     aes(x = value1, y = value2, color = cluster)) +
+  
+  geom_hline(yintercept = mean(country_means$trust),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  geom_vline(xintercept = mean(country_means$equality),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+
+  geom_point(size = 3, alpha = 0.7) +
+  geom_text_repel(aes(label = country, color = cluster), size = 3) +
+
+  facet_wrap(~ paste(var1, "vs", var2)) +
+  coord_equal()+
+  scale_color_manual(values = cluster_colors) +
+  
+  labs(
+    title = "Pairwise Country Comparisons Across Dimensions",
+    x = NULL,
+    y = NULL,
+    color = "Cluster"
+  ) +
+  
+  my_theme()
+
+print(facet_plot_2_4)
+```
+
+
+
+
+```{r}
+# Define Lookup and Cluster Data ---
+
+# Revised lookup table with all 22 countries
+country_lookup <- data.frame(
+  country = c("AT", "BE", "BG", "CY", "DE", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LV", "NL", "PL", "PT", "SE", "SI", "SK"),
+  map_region = c("Austria", "Belgium", "Bulgaria", "Cyprus", "Germany", "Estonia", "Spain", "Finland", "France", "Greece", "Croatia", "Hungary", "Ireland", "Italy", "Lithuania", "Latvia", "Netherlands", "Poland", "Portugal", "Sweden", "Slovenia", "Slovakia")
+)
+
+# Data Merging and Preparation ---
+# Get Europe map data
+europe_map <- map_data("world")
+
+# Merge your data with the lookup
+country_clusters_full4 <- merge(country_clusters_d4, country_lookup, by = "country")
+
+# Merge with map data
+europe_map <- merge(europe_map, country_clusters_full4, by.x = "region", by.y = "map_region", all.x = TRUE)
+
+# Filter to only show countries in your dataset
+europe_map <- europe_map %>% filter(region %in% country_lookup$map_region)
+
+europe_map <- europe_map %>%
+  dplyr::arrange(group, order, long)
+
+# Create the Map ---
+country_centroids <- europe_map %>%
+  group_by(region) %>%
+  summarise(
+    long = mean(long),
+    lat = mean(lat),
+    cluster = first(cluster)
+  )
+
+# Plot with labels
+ggplot(europe_map, aes(x = long, y = lat, group = group, fill = cluster)) +
+  geom_polygon(color = "white", linewidth = 0.25) +
+  geom_text(data = country_centroids, 
+            aes(x = long, y = lat, label = region, group = NULL),
+            size = 2.5, fontface = "bold", color = "black") +
+  scale_fill_manual(values = cluster_colors, name = "Clusters", na.value = "lightgray") +
+  coord_fixed(1.3, xlim = c(-15, 35), ylim = c(32, 72)) +
+  theme_void() +
+  labs(title = "European Countries by Cluster", 
+       subtitle = "Based on trust, immigration, and equality attitudes") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold", margin = margin(b = 5)),
+    plot.subtitle = element_text(hjust = 0.5, size = 11, margin = margin(b = 15)),
+    legend.position = "bottom",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9)
+  )
+```
+
