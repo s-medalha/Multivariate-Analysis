@@ -83,18 +83,32 @@ scaled_data <- data |>
 ## Introduction
 
 ## Methodology
+
+
+In order to find the latent variables behind the answers to the survey, we will perform factor analysis on our data set. Before performing dimensional reduction, we considered the correlation matrix of our data:
+
+```{r}
+#| label: corr-matrix
+cor(scaled_data)
+cor(scaled_data) |> round(2) |> image()
+```
+
+We can see that each variable has high correlation with at least one other variable. To evaluate the suitability of factor analysis, we can perform the Kaiser-Meyer-Olkin test. 
+
 ```{r}
 #| label: KMO
 #| warning: false
 KMO(scaled_data)
 ```
-After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(scaled_data)$MSA, digits = 2)`. This is classified as "meritorious", so we have an indication that factor analysis is suitable for this data set.
 
-We'll start by performing factor analysis with a high number of values:
+After executing the test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(scaled_data)$MSA, digits = 2)`. This is classified as "meritorious", so we have an indication that factor analysis is suitable for this data set.
+
+In order to decide the number of factors, we started by performing factor analysis with a high number of values and determined the scree plot.
   
 ```{r}
 #| label: first-fa
 #| warning: false
+#| include: false
 round(principal(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
 round(fa(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
 ```
@@ -103,7 +117,9 @@ round(fa(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
 #| label: scree-plot
 scree(scaled_data, factors = FALSE)
 ```
+Since there are three eigenvalues above 1 (Kaiser criterion) and the elbow of the scree plot is at the fourth component, we decided to use 3 factors in our factor analysis.
 
+In order to decide which method (principal components factoring or principal axis factoring) and rotation (varimax or quartimax) to use, we   
 
 ```{r}
 #| label: second-fa
@@ -210,7 +226,7 @@ plot_data <- do.call(rbind, lapply(methods, function(method) {
     geom_line(size = 0.5) +
     geom_point(size = 1) +
     coord_cartesian(ylim = c(0, 1)) +
-    scale_x_continuous(breaks = k_values) +
+    scale_x_continuous(breaks = 1:10) +
     scale_y_continuous(breaks = (0:10)/10) +
     labs(title = "Comparison of different hierarchical clustering methods", x = "Number of clusters", y = "R-squared")
 
