@@ -1,0 +1,1053 @@
+---
+title: Perspectives on Immigration, Gender Equality and Trust in Public Institutions in Europe
+author:
+  - name: Ana Rasinhas
+    affiliations:
+      name: "20241393"
+  - name: Daniela Gonçalves
+    affiliations:
+      name: "20251421"
+  - name: Pedro Fernandes
+    affiliations:
+      name: "20251418"
+  - name: Ricardo Branco
+    affiliations:
+      name: "20251164"
+  - name: Samuel Medalha
+    affiliations:
+      name: "20250080"
+abstract: |
+  {{< lipsum 1 >}}
+date: last-modified
+date-format: long
+format:
+  academic-typst:
+    section-numbering: "1.1.1"
+    toc: true
+execute:
+  echo: false
+  warning: false
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(readxl)
+library(psych)
+library(cluster)
+library(factoextra)
+library(dendextend)
+library(ggrepel)
+library(tinytable)
+library(FactoMineR)
+library(reshape2)
+```
+
+```{r}
+#| label: import-data
+#| include: false
+#| warnings: false
+
+raw_data <- read_excel("./dataset2.xlsx", range = cell_cols("A:YT"), sheet = 1)
+
+```
+
+```{r}
+#| label: data-processing
+#| include: false
+#| warnings: false
+
+selected_vars <- c("cntry", "trstprl", "trstlgl", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt", "imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
+
+selected_vars1 <- c("trstprl", "trstlgl", "trstplc", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt")
+
+reduced_scale_vars <- c("imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
+
+inverted_vars <- c("imsmetn", "imdfetn", "impcntr", "eqparep", "eqparlv", "freinsw", "fineqpy")
+
+removed_vars <- c("stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "eqparep", "eqparlv", "freinsw", "fineqpy")
+
+removed_countries <- c("IS", "IL", "ME", "NO", "RS", "CH", "UA", "GB")
+
+data <- raw_data |> 
+  select(all_of(selected_vars)) |> # select only some variables
+  filter(!cntry %in% removed_countries) |>  # remove non-EU countries
+  mutate(across(all_of(selected_vars), ~if_else(. %in% c(77, 88, 99), NA, .))) |> # set to NA when answer is unknown
+  mutate(across(all_of(reduced_scale_vars), ~if_else(. %in% c(7,8,9), NA, .))) |> # set to NA when answer is unknown
+  na.omit() |> # omit missing values
+  mutate(imsmetn = 5 - imsmetn, 
+         imdfetn = 5 - imdfetn,
+         impcntr = 5 - impcntr) |> # invert scale of some variables
+  select(-all_of(removed_vars))
+
+scaled_data <- data |> 
+  select(-cntry) |> 
+  scale() |> 
+  as_tibble()
+
+```
+
+## Introduction
+
+Ever since its creation, the European Union has shown a commitment to record and gather the relevant data about the how Europeans think about their present and expect for the future.
+
+In this paper, we focus on the European Social Survey (ESS), particularly the ESS round 11. The ESS is an academically driven, cross-national survey founded in 2001. Conducted in 40 different counties, this survey measures the attitudes, beliefs and behaviour patterns of diverse populations. Additionally, it requires strict random probability sampling, seeks a high response rate and uses rigorous translation protocols. It aims at operating a research infrastructure that provides high quality data, within and between European countries in their living conditions, social structure, public opinion and attitudes; practicing and encouraging the highest scientific standards in cross-national comparative research in the social sciences; and safeguarding the visibility, accessibility and reach of ESS data among researchers in the social sciences and beyond, policy makers and the wider public, at both the national and international levels[^1].
+
+[^1]: European Social Survey European Research Infrastructure (ESS ERIC) (2025) ESS round 11 - 2023. Social inequalities in health, Gender in contemporary Europe. Sikt - Norwegian Agency for Shared Services in Education and Research. <https://doi.org/10.21338/ess11-2023>
+
+Given the extensive nature of the survey, we choose to focus on topics that have been extensively discussed in Europe the past decade: immigration, gender equality and trust in public institutions.
+
+One of the core objectives of the European Union was to constitute an area of freedom, security and justice. To achieve this, the EU has developed common measures framing a policy on asylum and immigration, based on solidarity between Member States, which is fair towards third countries and their nationals[^2].
+
+[^2]: Perceptions, & Perceptions. (2022, November 14). Current migration trends in and within Europe. PERCEPTIONS. <https://www.perceptions.eu/current-migration-trends-in-and-within-europe-2/>
+
+In 2014, the European Commission and Directorate-General for Migration and Home Affairs created of the Asylum, Migration and Integration Fund (AMIF) in 2014. It was set up with a budget of 3,76 billion euros for 2014–2020. For the period of 2021-2027, the budget increased to 10,94 billion euros.\
+Its goals are to contribute to the strengthening and developing the Common European Asylum System (CEAS), support legal migration to EU Member States in line with the labour market needs and the effective integration of non-EU nationals; enhancing fair and effective return strategies, which contribute to combating irregular migration, with an emphasis on sustainability and effectiveness of the return process; and making sure that EU Member States which are most affected by migration and asylum flows can count on solidarity from other EU Member States, while fully respecting the rights and principles enshrined in the Charter of Fundamental Rights of the European Union[^3] [^4].
+
+[^3]: Asylum, Migration and Integration Fund (2021-2027). (n.d.). Migration and Home Affairs. <https://home-affairs.ec.europa.eu/funding/asylum-migration-and-integration-funds/asylum-migration-and-integration-fund-2021-2027_en>
+
+[^4]: L_2014150EN.01016801.XML. (n.d.). <https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32014R0516>
+
+According to the Internation Organization for Migration (IOM), the reception of irregular migrants and refugees in Europe peaked in 2015. It has since been steadily decreasing until reaching around 144 thousand people until the 1st of December of 2025. This flow of people, which was punctuated by thousands of deaths, forced the EU to heavily discuss migration policies. The European Parliament considers immigration one of the key concerns of European citizens and expects it to remain a challenge for years to come[^5].
+
+[^5]: Europe Arrivals \| Displacement Tracking Matrix. (n.d.). IOM UN Migration. Retrieved December 8, 2025, from <https://dtm.iom.int/europe/arrivals?type=arrivals>
+
+On of the common values of the European Union, protected under the Lisbon Treaty, is the equality of men and women. Pushing for gender equality is one of the Union's tasks (Article 3), as per the terms of the Treaty on the European Union. Additionally, it is also inscribed in articles 8 and 19 of the Treaty on the Functioning of the European Union, which instructs the Union to, in all its actions, ensure the respect of equality between men and women, and in article 23 of the Charter of Fundamental Rights, particularly in terms of wages and work[^6] [^7].
+
+[^6]: Women’s rights and gender equality in the European Union. (n.d.). <https://www.bmfwf.gv.at/en/women-and-equality/women-s-rights-and-gender-equality-in-the-eu.html>
+
+[^7]: EU Funding & Tenders Portal. (n.d.). <https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/programmes/cerv>
+
+In 2017, the European Commission commissioned a report on the gender equality and gender pay gap where it was concluded that gender equality is very important to Europeans. Some of the most relevant results point that most European believe in the promotion of gender equality to the ensure a fair and democratic society and in the importance of gender equality for companies, the economy and for them personally[^8].
+
+[^8]: European Commission. (n.d.). Eurobarometer. <https://europa.eu/eurobarometer/surveys/detail/2154>
+
+The European Parliament has been approving several resolutions on this issue. Nevertheless, in the latest report on gender equality ordered by the European Commission, it was found that, as the EU’s 2020–2025 gender equality strategy concludes, progress remains uneven and fragile: women’s representation in the European Parliament has declined for the first time, and global setbacks underscore persistent threats to women’s rights.
+
+Women remain under-represented in decision-making and disproportionately responsible for care work. The Gender Equality Index shows gradual EU-wide improvement but wide disparities between Member States, while ongoing resistance to women’s rights in parts of and beyond the EU reinforces the need for continued vigilance. Hence, the Commission plans a new roadmap to guide long-term efforts toward full equality in the coming five years[^9].
+
+[^9]: European Commission: Directorate-General for Justice and Consumers, 2025 report on gender equality in the EU, Publications Office of the European Union, 2025, <https://data.europa.eu/doi/10.2838/5262357>
+
+Finally, in recent years, the research on the role of institutions for economic growth has shown the significance that the quality and reliability of formal institutions have in fostering economic development and growth, as well as fostering political trust among citizens.
+
+In fact, political trust has been associated with the significant development in regional economic development. Political trust can impact regional economic development in two ways: on one hand, it validates the government and foster the acceptance of its measures, resulting in increased adherence to the law, better economic strategies, and strengthened third-party enforcement; and, on the other hand, political trust encourages traditional political involvement, which subsequently nurtures additional types of collaborative actions[^10].
+
+[^10]: Muringani, J., Fitjar, R.D. & Rodríguez-Pose, A. Political trust and economic development in European regions. Ann Reg Sci 73, 2059–2089 (2024). <https://doi.org/10.1007/s00168-024-01319-5>
+
+The last 5 years have been troublesome for Europe. After enduring the COVID-19 pandemic, the war in Ukraine and following cost-of-living crisis, the trust in trust in the EU and the national institutions suffered a deep erosion.\
+The Eurofund has found that the trust in the EU has increased since the onset of the pandemic (although, remaining at a low levels), and that that trust in national governments has decreased. It has also found that the levels of trust are unevenly distributed and decreased unevenly among socio-demographic groups, posing the risk of social fragmentation.\
+The main drivers to this decline in confidence involve a combination of economic and social elements, such as the cost-of-living crisis, feeling disregarded, and the polarizing influence of alternative media platforms like social media, which serves to exploit and amplify discontent. All these elements contribute to an increasing divide between the citizens and their governments[^11].
+
+[^11]: Trust in crisis: Europe’s social contract under threat \| Eurofound. (n.d.) <https://www.eurofound.europa.eu/en/commentary-and-analysis/all-content/trust-crisis-europes-social-contract-under-threat>
+
+Therefore, using the questions of ESS 11, we aim at the following:
+
+-   Q1: Identify the common factors that impact Europeans views of immigration, gender equality and trust in the political players, using Factor Analysis;
+
+-   Q2: Describe the profile of the EU countries regarding these matters, working with Cluster Analysis;
+
+-   Q3: Analyze the association between the levels of trust in public entities and the satisfaction with democracy of Portuguese citizens in different gender groups.
+
+## Methodology
+
+### Variable Selection
+
+The data used is from the European Social Survey (ESS), more specifically the Round 11 data (2023/24), Edition 4.0. The 11th ESS round covers 30 countries, where data was collected based on an hour-long face-to-face interview, covering a variety of core topics repeated from previous rounds of the survey and two modules developed for Round 11: “Gender in Contemporary Europe: Rethinking Equality and the Backlash” and “Social Inequalities in Health and their Determinants”. The universe considered consists of individuals aged from 15 and over, resident within private households, regardless of their nationality, citizenship, language or legal status, in the 30 considered countries.
+
+Due to the different Likert-type scales, all analytical variables were standardized. Without standardization, variables with larger numerical ranges would dominate factor extraction and clustering. Standardization ensures that each variable contributes equally to the underlying covariance structure.
+
+The mentioned version of the survey collected individual-level citizen responses across 30 countries, resulting in 50.116 observations. To limit the study to European Union (EU) member states, respondents from non-EU countries were removed from the dataset, resulting in a final sample covering 22 countries.
+
+The ESS uses several numeric codes to represent non-substantive responses, such as “Refusal” (codes 77 or 7), “Don’t know” (codes 88 or 8), and “No answer” (codes 99 or 9). All these incomplete observations were removed from the analysis, to ensure that the analytical dataset contained only complete cases, which is a requirement for the factor analysis procedures used in this study. At the end, this process led to 28.303 observations.
+
+Because ESS sample sizes vary across countries due to their national sampling designs, we chose to retain the original number of observations per country to preserve the importance and weight attributed to each country in the survey.
+
+All data preparation, factor analyses, and clustering procedures were performed in R, using standard packages for multivariate analysis.
+
+### Factor Analysis
+
+Factor Analysis (FA) was chosen over Principal Component Analysis (PCA) because the goal was to identify underlying concepts, such as institutional trust, attitudes toward immigration, and beliefs about gender equality, and not simply data reduction. FA is specifically designed to model these intangible factors that explain the correlations among the observed survey items, which aligns directly with the theoretical nature of the concepts being studied. 
+
+```{r}
+#| label: KMO
+#| warning: false
+KMO(scaled_data)
+```
+
+After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(scaled_data)$MSA, digits = 2)`. This is classified as "meritorious", so we have an indication that factor analysis is suitable for this data set.
+
+We'll start by performing factor analysis with a high number of values:
+
+```{r}
+#| label: first_fa
+#| warning: false
+round(principal(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
+round(fa(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
+```
+
+```{r}
+#| label: scree_plot
+scree(scaled_data, factors = FALSE)
+```
+
+```{r}
+pcf_varimax <- principal(scaled_data, nfactors = 3, method = "cov", rotate = "varimax", scores = TRUE ) # cov? or cor?
+pcf_quartimax <- principal(scaled_data, nfactors = 3, method = "cov", rotate = "quartimax")
+paf_varimax <- fa(scaled_data, nfactors = 3, rotate = "varimax")
+paf_quartimax <- fa(scaled_data, nfactors = 3, rotate = "quartimax")
+print(pcf_varimax$loadings, cutoff = 0.6, digits = 3)
+print(pcf_quartimax$loadings, cutoff = 0.6, digits = 3)
+print(paf_varimax$loadings, cutoff = 0.6, digits = 3)
+print(paf_quartimax$loadings, cutoff = 0.6, digits = 3)
+```
+
+Explicar porque standardizamos a média das observaçoes para cada país .
+
+```{r}
+data_scores2 <- cbind(data["cntry"], pcf_varimax$scores)
+
+country_means2 <- data_scores2  %>% 
+  group_by(cntry)  %>% 
+  summarise(across(starts_with("RC"), mean))  %>%  
+  rename("country" = cntry, "trust" = RC2, "immigration" = RC1, "equality" = RC3)
+
+#new features like country labels and sample size
+# country_means2$country <- rownames(country_means2)
+# 
+# sample_size <- data %>%
+#   count(cntry, name = "n") %>% 
+#   rename(country = cntry)
+# 
+# country_means2 <- country_means2 %>%
+#   left_join(sample_size, by = "country")
+
+```
+
+```{r}
+#| label: R-squared-function
+#| include: false
+
+numeric_data <- country_means2[ , -1, drop = FALSE]
+
+numeric_data <- scale(numeric_data)
+
+RSquared <- function(distance, method, k){
+  # Get vector with mean of each variable
+  centroid <- colMeans(numeric_data)
+  # Get total SS
+  SSt <- sum(apply(numeric_data, 1, function(row) sum((row - centroid)^2)))
+  # Get distance matrix
+  dist_matrix <- dist(numeric_data, method = distance)
+  # Hierarchical clustering
+  hc <- hclust(dist_matrix, method = method)
+  # Cut dendrogram with k clusters
+  cut <- cutree(hc, k = k)
+  SSw <- 0
+  for(i in 1:k) {
+    # Get indices of countries in cluster i
+    cluster_indices <- which(cut == i)
+    
+    if(length(cluster_indices) > 0) {
+      # Get data for this cluster
+      cluster_data <- numeric_data[cluster_indices, , drop = FALSE]
+      
+      # Calculate cluster mean
+      cluster_mean <- colMeans(cluster_data)
+      
+      # Weighted squared distance from cluster centroid
+      SSw <- SSw + sum(apply(cluster_data, 1, function(row) 
+      sum((row - cluster_mean)^2)))
+    }
+  }
+  1-(SSw/SSt)
+}
+```
+
+```{r}
+#| label: R-squared-plot
+
+methods <- c("ward.D", "average", "complete", "single", "centroid")
+
+plot_data <- do.call(rbind, lapply(methods, function(method) {
+  data.frame(
+    k = 1:10,
+    R_squared = sapply(1:10, function(k) {
+      RSquared("euclidean", method, k)
+    }),
+    Method = method
+  )
+}))
+
+  ggplot(plot_data, aes(x = k, y = R_squared, color = Method)) +
+    geom_line(size = 0.5) +
+    geom_point(size = 1) +
+    coord_cartesian(ylim = c(0, 1)) +
+    scale_x_continuous(breaks = 1:10) +
+    scale_y_continuous(breaks = (0:10)/10) +
+    labs(title = "Comparison of different hierarchical clustering methods", x = "Number of clusters", y = "R-squared")
+```
+
+```{r}
+my_theme <- function(base_size = 12) {
+  theme_minimal(base_size = base_size) +
+    theme(
+      # Customizing the title and subtitle
+      plot.title = element_text(face = "bold", size = 14, margin = margin(b = 10)),
+      plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15)),
+      # Grid line cleanup
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(linetype = "dotted", color = "gray85"),
+      # Axis line customization
+      axis.line = element_line(color = "gray80"),
+      # Legend position
+      legend.position = "bottom",
+      # Caption formatting
+      plot.caption = element_text(hjust = 0, color = "gray50", size = 9, margin = margin(t = 15)),
+      # Panel background and spacing
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background = element_rect(fill = "white", color = NA)
+    )
+}
+
+```
+
+```{r}
+#faceting 1
+
+pairs_df <- country_means2 %>%
+  mutate(id = row_number()) %>%
+  crossing(
+    tibble(var1 = c("equality", "equality", "immigration"),
+           var2 = c("immigration", "trust", "trust"))
+  ) %>%
+  mutate(
+    value1 = case_when(
+      var1 == "equality" ~ equality,
+      var1 == "immigration" ~ immigration,
+      var1 == "trust" ~ trust
+    ),
+    value2 = case_when(
+      var2 == "equality" ~ equality,
+      var2 == "immigration" ~ immigration,
+      var2 == "trust" ~ trust
+    )
+  ) %>%
+  select(id, country, var1, var2, value1, value2)
+
+pairs_df <- pairs_df %>%
+  mutate(pair = paste(var1, "vs", var2))
+
+reference_lines <- tibble(
+  pair = c("equality vs immigration", "equality vs trust", "immigration vs trust"),
+  var1 = c("equality", "equality", "immigration"),
+  var2 = c("immigration", "trust", "trust")
+) %>%
+  mutate(
+    # Horizontal intercept (mean of var2)
+    h_intercept = case_when(
+      var2 == "immigration" ~ mean(country_means2$immigration, na.rm = TRUE),
+      var2 == "trust" ~ mean(country_means2$trust, na.rm = TRUE),
+      var2 == "equality" ~ mean(country_means2$equality, na.rm = TRUE)
+    ),
+    # Vertical intercept (mean of var1)
+    v_intercept = case_when(
+      var1 == "immigration" ~ mean(country_means2$immigration, na.rm = TRUE),
+      var1 == "trust" ~ mean(country_means2$trust, na.rm = TRUE),
+      var1 == "equality" ~ mean(country_means2$equality, na.rm = TRUE)
+    )
+  )
+
+facet_plot <- ggplot(pairs_df, aes(x = value1, y = value2, color = pair)) +
+  
+  geom_hline(data = reference_lines, aes(yintercept = h_intercept),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  geom_vline(data = reference_lines, aes(xintercept = v_intercept),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_text_repel(aes(label = country), size = 3.5, show.legend = FALSE) +
+  facet_wrap(~ pair) +
+  coord_equal() +
+  scale_color_manual(values = c(  # Add 'values ='
+    "equality vs immigration" = "#E69F00",
+    "equality vs trust" = "#009E73",
+    "immigration vs trust" = "#0072B2"
+  ))+
+  
+  labs(
+    title = "Pairwise Country Comparisons Across Dimensions",
+    x = NULL,
+    y = NULL
+  ) +
+  
+  my_theme() +
+  theme(legend.position = "none")
+
+print(facet_plot)
+```
+
+```{r}
+colnames(pcf_varimax$loadings) <- c("Trust","Immigration", "Equality")
+fa.diagram(pcf_varimax)
+
+```
+
+```{r}
+loadings_df <- as.data.frame(pcf_varimax$loadings[,])
+loadings_df$variable <- rownames(loadings_df)
+
+# Reshape to long format
+loadings_long <- pivot_longer(loadings_df, 
+                              cols = -variable, 
+                              names_to = "Component", 
+                              values_to = "Loading")
+
+# Create a better visualization
+ggplot(loadings_long, aes(x = Component, y = variable, fill = Loading)) +
+  geom_tile() +
+  geom_text(aes(label = round(Loading, 2)), size = 3) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", 
+                       midpoint = 0) +
+  theme_minimal() +
+  labs(title = "Component Loadings Heatmap",
+       x = "Components", y = "Variables")
+```
+
+CLUSTER ANALYSIS STARTS HERE!!!
+
+```{r}
+# 1. Prepare data (select only numeric variables for clustering)
+cluster_data <- country_means2[, c("trust", "immigration", "equality")]
+rownames(cluster_data) <- country_means2$country
+
+# 2. Hierarchical methods to determine number of clusters
+
+# Ward method
+hc_ward <- agnes(cluster_data, metric = "euclidean", method = "ward")
+
+# Average method
+hc_average <- agnes(cluster_data, metric = "euclidean", method = "average")
+
+# Complete method
+hc_complete <- agnes(cluster_data, metric = "euclidean", method = "complete")
+
+# Single method
+hc_single <- agnes(cluster_data, metric = "euclidean", method = "single")
+
+
+print(hc_ward$ac)
+print(hc_average$ac)
+print(hc_complete$ac)
+print(hc_single$ac)
+
+
+pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+rect.hclust(hc_ward, k = 5, border = "red")
+
+pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+rect.hclust(hc_ward, k = 4, border = "red")
+
+fviz_nbclust(cluster_data, kmeans, method = "wss")
+
+fviz_nbclust(cluster_data, kmeans, method = "silhouette")
+```
+
+```{r}
+#Random k-means
+set.seed(123) #for replicability
+
+kmeans_result <- kmeans(cluster_data, centers = 5, nstart = 25, iter.max = 100) # nstart = different initial positions; 
+
+print(kmeans_result)
+
+country_clusters <- country_means2
+country_clusters$cluster <- as.factor(kmeans_result$cluster)
+
+```
+
+```{r}
+#deterministic k-means using hierarchical method
+hcward <- agnes(cluster_data, method = "ward")
+
+groups_hcward <- cutree(as.hclust(hcward), k = 5) #cut the tree into 5 clusters (k)
+
+initial_centers <- aggregate(cluster_data, by = list(groups_hcward), FUN = mean) #compute deterministic initial centroids
+
+initial_centers <- initial_centers[ ,-1] # remove group label column
+
+#compute k-means
+kmeans_result_d <- kmeans(cluster_data, centers = initial_centers, iter.max = 100)
+
+#merge to data
+country_clusters_d <- country_means2
+country_clusters_d$cluster <- as.factor(kmeans_result_d$cluster)
+
+print(kmeans_result_d$centers)
+print(table(country_clusters_d$cluster))
+```
+
+```{r}
+#Compare methods random vs deterministic
+# Compare cluster assignments
+comparison <- data.frame(
+  country = rownames(cluster_data),
+  hierarchical_kmeans = kmeans_result_d$cluster,
+  random_kmeans = kmeans_result$cluster
+) %>% 
+  arrange(hierarchical_kmeans, random_kmeans)
+
+# Check agreement
+print(comparison)
+#write_csv(comparison, "C:/Users/ricardo.branco/Downloads/comparison.csv")
+
+# Within-cluster sum of squares (lower is better)
+cat("Deterministic total WSS:", kmeans_result_d$tot.withinss, "\n")
+cat("Random total WSS:", kmeans_result$tot.withinss, "\n")
+
+
+```
+
+```{r}
+#Prepare data for visualization
+#1.color uniformity
+cluster_colors <- c(
+  "1" = "#E69F00",
+  "2" = "#0072B2",
+  "3" = "#009E73",
+  "4" = "#D55E00",
+  "5" = "#CC79A7"
+)
+
+```
+
+```{r}
+#faceting 2
+
+pairs_df2 <- country_clusters_d %>%
+  mutate(id = row_number()) %>%
+  crossing(
+    tibble(var1 = c("equality", "equality", "immigration"),
+           var2 = c("immigration", "trust", "trust"))
+  ) %>%
+  mutate(
+    value1 = case_when(
+      var1 == "equality" ~ equality,
+      var1 == "immigration" ~ immigration,
+      var1 == "trust" ~ trust
+    ),
+    value2 = case_when(
+      var2 == "equality" ~ equality,
+      var2 == "immigration" ~ immigration,
+      var2 == "trust" ~ trust
+    )
+  ) %>%
+  select(id, country, cluster, var1, var2, value1, value2)
+
+facet_plot_2 <- ggplot(pairs_df2, 
+                     aes(x = value1, y = value2, color = cluster)) +
+  
+  geom_hline(yintercept = mean(country_means2$trust),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  geom_vline(xintercept = mean(country_means2$equality),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+
+  geom_point(size = 3, alpha = 0.7) +
+  geom_text_repel(aes(label = country, color = cluster), size = 3) +
+
+  facet_wrap(~ paste(var1, "vs", var2)) +
+  coord_equal()+
+  scale_color_manual(values = cluster_colors) +
+  
+  labs(
+    title = "Pairwise Country Comparisons Across Dimensions",
+    x = NULL,
+    y = NULL,
+    color = "Cluster"
+  ) +
+  
+  my_theme()
+
+print(facet_plot_2)
+
+```
+
+```{r}
+# Define Lookup and Cluster Data ---
+
+# Revised lookup table with all 22 countries
+country_lookup <- data.frame(
+  country = c("AT", "BE", "BG", "CY", "DE", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LV", "NL", "PL", "PT", "SE", "SI", "SK"),
+  map_region = c("Austria", "Belgium", "Bulgaria", "Cyprus", "Germany", "Estonia", "Spain", "Finland", "France", "Greece", "Croatia", "Hungary", "Ireland", "Italy", "Lithuania", "Latvia", "Netherlands", "Poland", "Portugal", "Sweden", "Slovenia", "Slovakia")
+)
+
+# Data Merging and Preparation ---
+# Get Europe map data
+europe_map <- map_data("world")
+
+# Merge your data with the lookup
+country_clusters_full <- merge(country_clusters_d, country_lookup, by = "country")
+
+# Merge with map data
+europe_map <- merge(europe_map, country_clusters_full, by.x = "region", by.y = "map_region", all.x = TRUE)
+
+# Filter to only show countries in your dataset
+europe_map <- europe_map %>% filter(region %in% country_lookup$map_region)
+
+europe_map <- europe_map %>%
+  dplyr::arrange(group, order, long)
+
+# Create the Map ---
+
+ggplot(europe_map, aes(x = long, y = lat, group = group, fill = cluster)) +
+  geom_polygon(color = "white", linewidth = 0.25) +
+  scale_fill_manual(values = cluster_colors, name = "Clusters", na.value = "lightgray") +
+  # Adjusted limits to better frame the entire region
+  coord_fixed(1.3, xlim = c(-15, 35), ylim = c(32, 72)) +
+  theme_void() +
+  labs(title = "European Countries by Cluster", subtitle = "Based on trust, immigration, and equality attitudes") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold", margin = margin(b = 5)),
+    plot.subtitle = element_text(hjust = 0.5, size = 11, margin = margin(b = 15)),
+    legend.position = "bottom",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9)
+  )
+```
+
+STARTS HERE the CORRESPONDENCE ANALYSIS
+
+```{r}
+
+pt_df_ca <- raw_data %>%
+  filter(cntry == "PT") %>%
+  filter(icgndra %in% c(1, 2)) %>%
+  filter(agea <= 99) %>% 
+  filter(
+    # Trust variables (0-10 scale)
+    trstprl %in% 0:10, trstlgl %in% 0:10, trstplt %in% 0:10, 
+    trstprt %in% 0:10, trstep %in% 0:10, trstun %in% 0:10,
+    # Immigration variables (0-10 scale)
+    imbgeco %in% 0:10, imueclt %in% 0:10, imwbcnt %in% 0:10,
+    # Immigration variables (1-4 scale)
+    imsmetn %in% 1:4, imdfetn %in% 1:4, impcntr %in% 1:4,
+    # Equality variables (depends on their scale)
+    eqwrkbg %in% 1:6, eqpolbg %in% 1:6, eqmgmbg %in% 1:6, eqpaybg %in% 1:6  # selecting only obs values
+  ) %>% 
+  mutate(icgndra = factor(icgndra, levels = c(1, 2), labels = c("Male", "Female"))) %>%
+  select(
+    #country
+    cntry,
+    #Gender
+    icgndra,
+    # Age variable
+    agea,
+    # Trust variables
+    trstprl, trstlgl, trstplt, trstprt, trstep, trstun,
+    # Immigration variables
+    imbgeco, imueclt, imwbcnt, imsmetn, imdfetn, impcntr,
+    # Equality variables
+    eqwrkbg, eqpolbg, eqmgmbg, eqpaybg
+  ) %>%
+    na.omit() |> # omit missing values
+    mutate(imsmetn = 5 - imsmetn, 
+         imdfetn = 5 - imdfetn,
+         impcntr = 5 - impcntr
+        ) # invert scale of some variables
+
+
+hist(pt_df_ca$agea, main = "Age Distribution in Portugal plus France", 
+     xlab = "Age", col = "#0072B2", breaks = 10)
+
+
+
+
+```
+
+```{r}
+pt_df_ca <- pt_df_ca %>%
+  mutate(
+    age_group = case_when(
+      agea < 30 ~ "15-29",
+      agea >= 30 & agea < 45 ~ "30-44",
+      agea >= 45 & agea < 60 ~ "45-59",
+      agea >= 60 ~ "60+"
+    ),
+    age_group = factor(age_group, levels = c("18-29", "30-44", "45-59", "60+"))
+  )
+
+# Check distribution
+table(pt_df_ca$age_group)
+```
+
+```{r}
+
+# # Extract loadings matrix
+# loadings_matrix <- pcf_varimax$loadings[, c("RC1", "RC2", "RC3")]
+# 
+# # Create loadings vectors, keeping only values > 0.5, rest = 0
+# rc1 <- ifelse(abs(loadings_matrix[, "RC1"]) > 0.5, loadings_matrix[, "RC1"], 0)
+# rc2 <- ifelse(abs(loadings_matrix[, "RC2"]) > 0.5, loadings_matrix[, "RC2"], 0)
+# rc3 <- ifelse(abs(loadings_matrix[, "RC3"]) > 0.5, loadings_matrix[, "RC3"], 0)
+# 
+# # Show which variables are used for each factor
+# data.frame(
+#   variable = rownames(loadings_matrix),
+#   RC1_immigration = rc1,
+#   RC2_trust = rc2,
+#   RC3_equality = rc3)
+# 
+# # Now compute weighted indices
+# fa_vars <- pt_df_ca[, rownames(loadings_matrix)]
+# fa_vars <- as.matrix(sapply(fa_vars, as.numeric))
+# 
+# pt_df_ca <- pt_df_ca %>%
+#   mutate(
+#     immigration = fa_vars %*% rc1,
+#     trust = fa_vars %*% rc2,
+#     equality = fa_vars %*% rc3
+#   )
+# 
+# 
+# pt_df_ca <- pt_df_ca %>%
+#   mutate(
+#     trust_cat = cut(trust,
+#                     breaks = unique(quantile(trust, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)),
+#                     include.lowest = TRUE,
+#                     labels = c("Very Weak", "Weak", "Strong", "Very Strong")[1:(length(unique(quantile(trust, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)))-1)]),
+#     
+#     immigration_cat = cut(immigration,
+#                           breaks = unique(quantile(immigration, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)),
+#                           include.lowest = TRUE,
+#                           labels = c("Very Weak", "Weak", "Strong", "Very Strong")[1:(length(unique(quantile(immigration, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)))-1)]),
+#     
+#     equality_cat = cut(equality,
+#                        breaks = unique(quantile(equality, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)),
+#                        include.lowest = TRUE,
+#                        labels = c("Very Weak", "Weak", "Strong", "Very Strong")[1:(length(unique(quantile(equality, probs = c(0, .25, .50, .75, 1), na.rm = TRUE)))-1)]),
+#     
+#     age_group = paste(age_group, " (", cntry, ", ", icgndra, ")")
+#   )
+```
+
+```{r}
+# tab <- table(pt_df_ca$age_group, pt_df_ca$trust_cat)
+# 
+# ca_result <- CA(tab, graph = FALSE)
+# 
+# # Scree plot
+# fviz_screeplot(ca_result)
+# 
+# # Biplot with labels
+# fviz_ca_biplot(ca_result, repel = TRUE)
+# 
+# # Row factor map
+# fviz_ca_row(ca_result, repel = TRUE)
+# 
+# # Column factor map
+# fviz_ca_col(ca_result, repel = TRUE)
+```
+
+```{r}
+
+# # Your contingency table
+# tab <- table(pt_df_ca$age_group, pt_df_ca$immigration_cat)
+# 
+# # Perform Correspondence Analysis
+# ca_result <- CA(tab, graph = FALSE)
+# 
+# # Observed values
+# observed <- tab
+# 
+# # Expected values under independence
+# expected <- chisq.test(tab)$expected
+# 
+# # Combine observed and expected in a single data frame for comparison
+# comparison_df <- data.frame(
+#   Row = rep(rownames(observed), times = ncol(observed)),
+#   Column = rep(colnames(observed), each = nrow(observed)),
+#   Observed = as.vector(observed),
+#   Expected = as.vector(expected) 
+# )
+# 
+# comparison_df <- comparison_df %>% 
+#     mutate(Diff = comparison_df$Observed - comparison_df$Expected ) %>% 
+#     arrange(Diff) %>% 
+#     print(n = 10)
+# 
+# # Create a heatmap of the difference
+# ggplot(comparison_df, aes(x = Column, y = Row, fill = Diff)) +
+#   geom_tile(color = "white") +
+#   scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+#   geom_text(aes(label = Observed), color = "black") +
+#   theme_minimal() +
+#   labs(title = "Observed vs Expected (Difference) Heatmap",
+#        fill = "Observed - Expected")
+```
+
+## Results
+
+## Discussion
+
+## Conclusions
+
+## References
+
+## Appendix
+
+| ID | Question | Scale |
+|:----------------:|:---------------------------:|:-----------------------:|
+| trstprl | How much do you personally trust \[country\]'s parliament? | 0 (No trust at all) - 10 (Complete trust) |
+| trstlgl | How much do you personally trust the legal system? | 0 (No trust at all) - 10 (Complete trust) |
+| trstplt | How much do you personally trust politicians? | 0 (No trust at all) - 10 (Complete trust) |
+| trstprt | How much do you personally trust political parties? | 0 (No trust at all) - 10 (Complete trust) |
+| trstep | How much do you personally trust the European Parliament? | 0 (No trust at all) - 10 (Complete trust) |
+| trstun | How much do you personally trust the United Nations? | 0 (No trust at all) - 10 (Complete trust) |
+| imbgeco | Would you say it is generally bad or good for \[country\]’s economy that people come to live here from other countries? | 0 (Bad for economy) - 10 (Good for economy) |
+| imueclt | Would you say that \[country\]’s cultural life is generally undermined or enriched by people coming to live here from other countries? | 0 (Cultural life undermined) - 10 (Cultural life enriched) |
+| imwbcnt | Is \[country\] made a worse or a better place to live by people coming to live here from other countries? | 0 (Worse place to live) - 10 (Better place to live) |
+| imsmetn | To what extent do you think \[country\] should allow people of the same race or ethnic group as most \[country\]'s people to come and live here? | 1 (Allow many to come and live here) - 4 ( Allow none)^\*^ |
+| imdfetn | To what extent do you think \[country\] should allow people of a different race or ethnic group from most \[country\] people to come and live here? | 1 (Allow many to come and live here) - 4 (Allow none)^\*^ |
+| impcntr | To what extent do you think \[country\] should allow people from poorer countries outside Europe to come and live here? | 1 (Allow many to come and live here - 4 (Allow none) ^\*^ |
+| eqwrkbg | In general, how bad or good is it for family life in \[country\] if equal numbers of women and men are in paid work? | 0 (Very bad for family life in \[country\]) - 6 (Very good for family life in \[country\]) |
+| eqpolbg | In general, how bad or good is it for politics in \[country\] if equal numbers of women and men are in positions of political leadership? | 0 (Very bad for politics in \[country\]) – 6 (Very good for politics in \[country\]) |
+| eqmgmbg | In general, how bad or good is it for businesses in \[country\] if equal numbers of women and men are in higher management positions? | 0 (Very bad for businesses in \[country\]) – 6 (Very good for businesses in \[country\]) |
+| eqpaybg | In general, how bad or good is it for the strength of the economy in \[country\] if women and men receive equal pay for doing the same work? | 0 (Very bad for the strength of the economy in \[country\]) – 6 ( Very good for the strength of the economy in \[country\]) |
+
+: Selected variables
+
+^\*^ The original scales of these three variables were reversed so that higher values consistently represent more positive or more permissive attitudes across all questions
+
+|                   |                             |
+|:-----------------:|:---------------------------:|
+|   **Country**     | **Number of observations**  |
+|   AT - Austria    |            1716             |
+|   BE - Belgium    |            1360             |
+|  BG - Bulgaria    |            1554             |
+|   CY - Cyprus     |            516              |
+|   DE - Germany    |            2046             |
+|   EE - Estonia    |            891              |
+|    ES - Spain     |            1448             |
+|   FI - Finland    |            1372             |
+|   FR - France     |            1382             |
+|   GR - Greece     |            2174             |
+|   HR - Croatia    |            1200             |
+|   HU - Hungary    |            1473             |
+|   IE - Ireland    |            1360             |
+|    IT - Italy     |            2165             |
+|  LT - Lithuania   |            904              |
+|    LV -Latvia     |            612              |
+| NL - Netherlands  |            1312             |
+|   PL - Poland     |            902              |
+|  PT - Portugal    |            1036             |
+|   SE - Sweden     |            1000             |
+|  SI - Slovenia    |            897              |
+|  SK - Slovakia    |            983              |
+
+CLUSTER 4 ANALYSIS STARTS HERE!!!
+
+```{r}
+# # 1. Prepare data (select only numeric variables for clustering)
+# cluster_data <- country_means2[, c("trust", "immigration", "equality")]
+# rownames(cluster_data) <- country_means2$country
+# 
+# # 2. Hierarchical methods to determine number of clusters
+# 
+# # Ward method
+# hc_ward <- agnes(cluster_data, metric = "euclidean", method = "ward")
+# 
+# # Average method
+# hc_average <- agnes(cluster_data, metric = "euclidean", method = "average")
+# 
+# # Complete method
+# hc_complete <- agnes(cluster_data, metric = "euclidean", method = "complete")
+# 
+# # Single method
+# hc_single <- agnes(cluster_data, metric = "euclidean", method = "single")
+# 
+# 
+# print(hc_ward$ac)
+# print(hc_average$ac)
+# print(hc_complete$ac)
+# print(hc_single$ac)
+# 
+# 
+# pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+# rect.hclust(hc_ward, k = 5, border = "red")
+# 
+# pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+# rect.hclust(hc_ward, k = 4, border = "red")
+# 
+# fviz_nbclust(cluster_data, kmeans, method = "wss")
+# 
+# fviz_nbclust(cluster_data, kmeans, method = "silhouette")
+```
+
+```{r}
+# #Random k-means
+# set.seed(123) #for replicability
+# 
+# kmeans_result_4 <- kmeans(cluster_data, centers = 4, nstart = 25, iter.max = 100) # nstart = different initial positions; 
+# 
+# print(kmeans_result_4)
+# 
+# country_clusters_4 <- country_means2
+# country_clusters$cluster <- as.factor(kmeans_result_4$cluster)
+# 
+# ```
+# 
+# ```{r}
+# #deterministic k-means using hierarchical method
+# hcward4 <- agnes(cluster_data, method = "ward")
+# 
+# groups_hcward4 <- cutree(as.hclust(hcward4), k = 4) #cut the tree into 5 clusters (k)
+# 
+# initial_centers4 <- aggregate(cluster_data, by = list(groups_hcward4), FUN = mean) #compute deterministic initial centroids
+# 
+# initial_centers4 <- initial_centers4[ ,-1] # remove group label column
+# 
+# #compute k-means
+# kmeans_result_d4 <- kmeans(cluster_data, centers = initial_centers4, iter.max = 100)
+# 
+# #merge to data
+# country_clusters_d4 <- country_means2
+# country_clusters_d4$cluster <- as.factor(kmeans_result_d4$cluster)
+# 
+# print(kmeans_result_d4$centers)
+# print(table(country_clusters_d4$cluster))
+```
+
+```{r}
+# #Compare methods random vs deterministic
+# # Compare cluster assignments
+# comparison4 <- data.frame(
+#   country = rownames(cluster_data),
+#   hierarchical_kmeans4 = kmeans_result_d4$cluster,
+#   random_kmeans4 = kmeans_result_4$cluster
+# ) %>% 
+#   arrange(hierarchical_kmeans4, random_kmeans4)
+# 
+# # Check agreement
+# print(comparison4)
+# write_csv(comparison4, "C:/Users/ricardo.branco/Downloads/comparison4.csv")
+# 
+# # Within-cluster sum of squares (lower is better)
+# cat("Deterministic total WSS:", kmeans_result_d4$tot.withinss, "\n")
+# cat("Random total WSS:", kmeans_result4$tot.withinss, "\n")
+# ```
+# 
+# ```{r}
+# #Prepare data for visualization
+# #1.color uniformity
+# cluster_colors4 <- c(
+#   "1" = "#E69F00",
+#   "2" = "#0072B2",
+#   "3" = "#009E73",
+#   "4" = "#D55E00"
+# )
+```
+
+```{r}
+# #faceting 2
+# 
+# pairs_df2_4 <- country_clusters_d4 %>%
+#   mutate(id = row_number()) %>%
+#   crossing(
+#     tibble(var1 = c("equality", "equality", "immigration"),
+#            var2 = c("immigration", "trust", "trust"))
+#   ) %>%
+#   mutate(
+#     value1 = case_when(
+#       var1 == "equality" ~ equality,
+#       var1 == "immigration" ~ immigration,
+#       var1 == "trust" ~ trust
+#     ),
+#     value2 = case_when(
+#       var2 == "equality" ~ equality,
+#       var2 == "immigration" ~ immigration,
+#       var2 == "trust" ~ trust
+#     )
+#   ) %>%
+#   select(id, country, cluster, var1, var2, value1, value2)
+# 
+# 
+# facet_plot_2_4 <- ggplot(pairs_df2_4, 
+#                      aes(x = value1, y = value2, color = cluster)) +
+#   
+#   geom_hline(yintercept = mean(country_means$trust),
+#              linetype = "dashed", color = "gray50", alpha = 0.5) +
+#   geom_vline(xintercept = mean(country_means$equality),
+#              linetype = "dashed", color = "gray50", alpha = 0.5) +
+# 
+#   geom_point(size = 3, alpha = 0.7) +
+#   geom_text_repel(aes(label = country, color = cluster), size = 3) +
+# 
+#   facet_wrap(~ paste(var1, "vs", var2)) +
+#   coord_equal()+
+#   scale_color_manual(values = cluster_colors) +
+#   
+#   labs(
+#     title = "Pairwise Country Comparisons Across Dimensions",
+#     x = NULL,
+#     y = NULL,
+#     color = "Cluster"
+#   ) +
+#   
+#   my_theme()
+# 
+# print(facet_plot_2_4)
+```
+
+```{r}
+# # Define Lookup and Cluster Data ---
+# 
+# # Revised lookup table with all 22 countries
+# country_lookup <- data.frame(
+#   country = c("AT", "BE", "BG", "CY", "DE", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LV", "NL", "PL", "PT", "SE", "SI", "SK"),
+#   map_region = c("Austria", "Belgium", "Bulgaria", "Cyprus", "Germany", "Estonia", "Spain", "Finland", "France", "Greece", "Croatia", "Hungary", "Ireland", "Italy", "Lithuania", "Latvia", "Netherlands", "Poland", "Portugal", "Sweden", "Slovenia", "Slovakia")
+# )
+# 
+# # Data Merging and Preparation ---
+# # Get Europe map data
+# europe_map <- map_data("world")
+# 
+# # Merge your data with the lookup
+# country_clusters_full4 <- merge(country_clusters_d4, country_lookup, by = "country")
+# 
+# # Merge with map data
+# europe_map <- merge(europe_map, country_clusters_full4, by.x = "region", by.y = "map_region", all.x = TRUE)
+# 
+# # Filter to only show countries in your dataset
+# europe_map <- europe_map %>% filter(region %in% country_lookup$map_region)
+# 
+# europe_map <- europe_map %>%
+#   dplyr::arrange(group, order, long)
+# 
+# # Create the Map ---
+# country_centroids <- europe_map %>%
+#   group_by(region) %>%
+#   summarise(
+#     long = mean(long),
+#     lat = mean(lat),
+#     cluster = first(cluster)
+#   )
+# 
+# # Plot with labels
+# ggplot(europe_map, aes(x = long, y = lat, group = group, fill = cluster)) +
+#   geom_polygon(color = "white", linewidth = 0.25) +
+#   geom_text(data = country_centroids, 
+#             aes(x = long, y = lat, label = region, group = NULL),
+#             size = 2.5, fontface = "bold", color = "black") +
+#   scale_fill_manual(values = cluster_colors, name = "Clusters", na.value = "lightgray") +
+#   coord_fixed(1.3, xlim = c(-15, 35), ylim = c(32, 72)) +
+#   theme_void() +
+#   labs(title = "European Countries by Cluster", 
+#        subtitle = "Based on trust, immigration, and equality attitudes") +
+#   theme(
+#     plot.title = element_text(hjust = 0.5, size = 16, face = "bold", margin = margin(b = 5)),
+#     plot.subtitle = element_text(hjust = 0.5, size = 11, margin = margin(b = 15)),
+#     legend.position = "bottom",
+#     legend.title = element_text(size = 10, face = "bold"),
+#     legend.text = element_text(size = 9)
+#   )
+```
