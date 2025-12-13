@@ -49,6 +49,7 @@ library(reshape2)
 #| label: import-data
 #| include: false
 #| warnings: false
+#| cache: true
 
 raw_data <- read_excel("./dataset2.xlsx", range = cell_cols("A:YT"), sheet = 1)
 
@@ -61,7 +62,7 @@ raw_data <- read_excel("./dataset2.xlsx", range = cell_cols("A:YT"), sheet = 1)
 
 selected_vars <- c("cntry", "trstprl", "trstlgl", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt", "imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
 
-selected_vars1 <- c("trstprl", "trstlgl", "trstplc", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt")
+#selected_vars1 <- c("trstprl", "trstlgl", "trstplc", "trstplt", "trstprt", "trstep", "trstun", "stfeco", "stfgov", "stfdem", "stfedu", "stfhlth", "imbgeco", "imueclt", "imwbcnt")
 
 reduced_scale_vars <- c("imsmetn", "imdfetn", "impcntr", "eqwrkbg", "eqpolbg", "eqmgmbg", "eqmgmbg", "eqpaybg", "eqparep", "eqparlv", "freinsw", "fineqpy")
 
@@ -176,36 +177,133 @@ Factor Analysis (FA) was chosen over Principal Component Analysis (PCA) because 
 KMO(scaled_data)
 ```
 
-After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(scaled_data)$MSA, digits = 2)`. This is classified as "meritorious", so we have an indication that factor analysis is suitable for this data set.
+After executing the Kaiser-Meyer-Olkin test, the MSA (measure of sampling accuracy, which varies between 0 and 1) is calculated as `r format(KMO(scaled_data)$MSA, digits = 2)`. This measure is an indicator of homogeneity between variables, that serves to indicate how appropriate the date is for Factor Analysis. The literature suggests that KMO values should be above 0.60 to be considered tolerable for Factor Analysis, although ideally it should be as close to 1 as possible.
 
-We'll start by performing factor analysis with a high number of values:
+```{r}
+#| label: fig-corr-matrix
+#| fig-cap: "Correlation Heatmap"
+cormat <- round(cor(scaled_data), 2)
+
+
+# Get lower triangle of the correlation matrix
+  get_lower_tri<-function(cormat){
+    cormat[upper.tri(cormat)] <- NA
+    return(cormat)
+  }
+# Get upper triangle of the correlation matrix
+  get_upper_tri <- function(cormat){
+    cormat[lower.tri(cormat)]<- NA
+    return(cormat)
+  }
+  
+upper_tri <- get_upper_tri(cormat)
+  
+melted_cormat <- melt(upper_tri, na.rm = TRUE)
+
+ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Correlation") +
+  theme_minimal()+ 
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+  theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  axis.ticks = element_blank(),
+  legend.justification = c(1, 0),
+  legend.position = c(0.6, 0.7),
+  legend.direction = "horizontal")+
+  guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                title.position = "top", title.hjust = 0.5)) +
+ coord_fixed()
+```
+
+The correlation matrix shows that each variable has, at least, one absolute correlation coefficient of 0.5 with another variable.  
+Therefore, we can conclude that correlations among variables were sufficiently strong to warrant factor extraction.
 
 ```{r}
 #| label: first_fa
 #| warning: false
+#| include: false
 round(principal(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
 round(fa(scaled_data, nfactors = length(scaled_data))$Vaccounted, digits = 3)
 ```
 
+#### Number of Factors
+
+To select the number of factors to retain, Kaiser’s criterion, Scree plot and Pearson’s criterion were analyzed. According to Kaiser’s rule, only three factors have eigenvalues greater than 1, suggesting a three-factor solution. The scree plot shows a marked elbow at the fourth component, also suggesting a three-factor solution (4 minus 1).
+
+Although Pearson’s criterion recommends retaining factors that together explain at least 80% of the total variance, our data does not meet this threshold, with the three retained components accounting for approximately 68% of the variance (as demonstrated in @tbl-Vaccounted below). Nonetheless, a three-factor structure was ultimately chosen because it is supported by Kaiser’s criterion and Scree plot, and it offered the most coherent and theoretically meaningful interpretation of the data.
+
 ```{r}
-#| label: scree_plot
+#| label: fig-scree-plot
 scree(scaled_data, factors = FALSE)
 ```
 
+#### Rotation
+  
+Factor extraction was repeated using both Principal Component Analysis (PCA) and Principal Axis Factoring (PAF) combined with Varimax and Quartimax rotations. Orthogonal rotations were chosen to produce factors that are uncorrelated and easier to interpret. Loadings were examined to determine the variables most strongly associated with each factor. Although no substantive interpretations are presented in this section, these factors form the basis for the construction of factor scores. 
+
+PCA with *Varimax* rotation showed the most interpretable and stable factor structure, as well as better loadings and cumulative variance. This solution produced clearly defined factors with high loadings on conceptually coherent variables, facilitating theoretical interpretation. Other factors structures were tested and are presented in Annex XX. 
+
 ```{r}
-pcf_varimax <- principal(scaled_data, nfactors = 3, method = "cov", rotate = "varimax", scores = TRUE ) # cov? or cor?
+#print(pcf_varimax$loadings, cutoff = 0.6, digits = 3)
+#print(pcf_quartimax$loadings, cutoff = 0.6, digits = 3)
+#print(paf_varimax$loadings, cutoff = 0.6, digits = 3)
+#print(paf_quartimax$loadings, cutoff = 0.6, digits = 3)
+```
+
+```{r}
+#| label: tbl-varimax-results
+#| tbl-cap: "PCF Varimax Loadings"
+library(gt)
+
+pcf_varimax <- principal(scaled_data, nfactors = 3, method = "cov", rotate = "varimax", scores = TRUE)
 pcf_quartimax <- principal(scaled_data, nfactors = 3, method = "cov", rotate = "quartimax")
 paf_varimax <- fa(scaled_data, nfactors = 3, rotate = "varimax")
 paf_quartimax <- fa(scaled_data, nfactors = 3, rotate = "quartimax")
-print(pcf_varimax$loadings, cutoff = 0.6, digits = 3)
-print(pcf_quartimax$loadings, cutoff = 0.6, digits = 3)
-print(paf_varimax$loadings, cutoff = 0.6, digits = 3)
-print(paf_quartimax$loadings, cutoff = 0.6, digits = 3)
+
+# Convert to data frame
+loadings_df <- as.data.frame.matrix(pcf_varimax$loadings[])
+loadings_df <- round(loadings_df, 3)
+
+# Create gt table with conditional formatting
+gt(loadings_df, rownames_to_stub = TRUE) |>
+  sub_missing(missing_text = "") |>
+  data_color(
+    columns = everything(),
+    fn = function(x) {
+      case_when(
+        abs(as.numeric(x)) >= 0.7 ~ "darkgreen",
+        abs(as.numeric(x)) >= 0.6 ~ "green",
+        TRUE ~ "white"
+      )
+    }
+  )
 ```
 
-Explicar porque standardizamos a média das observaçoes para cada país .
+```{r}
+#| label: tbl-Vaccounted
+#| tbl-cap: Cumulative Variance
+gt(as.data.frame(round(pcf_varimax$Vaccounted["Cumulative Var", , drop = FALSE], 3)))
+```
+
+### Cluster Analysis
+
+After the use of Factor Analysis – in which we found three latent dimensions – we used Cluster Analysis to aggregate factor scores by country. For each country, the mean value of each factor's score was calculated. The resulting country-level dataset consists of three standardized latent dimensions representing national averages of institutional trust, immigration attitudes, and gender equality perspective. Before clustering, these countries' means were standardized to equalize their contribution to distance calculations. Since there is no substantive reason to preserve differences in variance across the three factors (the variances of the three factors are similar), standardization ensures that no factor disproportionately influences the resulting clusters.
+
+#### Hierarchical Cluster Analysis
+
+To classify countries based on their average, a hierarchical cluster analysis was performed. Distances between countries were computed using Euclidean distance, and multiple linkage methods (Ward’s method, Average linkage, Centroid, Complete linkage, and Single linkage) were compared to evaluate the stability and structure of the resulting clusters. The Ward’s method was chosen, because it minimizes within-cluster variance and it produces more interpretable and compact groupings, which allows for better characterization of countries according to their broader attitudinal profiles rather than detect minimal chaining or highly irregular clusters.
+
 
 ```{r}
+#| label: country-means
 data_scores2 <- cbind(data["cntry"], pcf_varimax$scores)
 
 country_means2 <- data_scores2  %>% 
@@ -263,10 +361,12 @@ RSquared <- function(distance, method, k){
   }
   1-(SSw/SSt)
 }
+
 ```
 
 ```{r}
-#| label: R-squared-plot
+#| label: fig-R-squared-plot
+#| fig-cap: "R-squared values of the different hierarchical methods"
 
 methods <- c("ward.D", "average", "complete", "single", "centroid")
 
@@ -286,7 +386,46 @@ plot_data <- do.call(rbind, lapply(methods, function(method) {
     coord_cartesian(ylim = c(0, 1)) +
     scale_x_continuous(breaks = 1:10) +
     scale_y_continuous(breaks = (0:10)/10) +
-    labs(title = "Comparison of different hierarchical clustering methods", x = "Number of clusters", y = "R-squared")
+    labs(x = "Number of clusters", y = "R-squared")
+```
+
+Several possible cut-points were examined, and a five-cluster solution was chosen, as the R² values increased substantially up to five clusters before leveling off. The R2 with 5 clusters is 0.753, which is a significant improvement from the 4-cluster solution (R2 = 0.654 with 4 clusters), while the jump from 5 to 6 clusters does not lead to a great improvement in the R2 (R2 = 0.804 with 6 clusters). 
+
+Additionally, the analysis of the Ward dendrogram in @fig-dendrogram leads to the same conclusion, as the cut should be done in the largest vertical distance without any horizontal mergers. 
+
+Therefore, this solution demonstrated strong coherence, stability of the grouping across alternative linkage methods, and it was supported by the cluster dendrogram, while being interpretable. 
+
+```{r}
+#| label: fig-dendrogram
+#| fig-cap: "Dendrogram - Ward Method"
+# 1. Prepare data (select only numeric variables for clustering)
+cluster_data <- country_means2[, c("trust", "immigration", "equality")]
+rownames(cluster_data) <- country_means2$country
+
+# 2. Hierarchical methods to determine number of clusters
+
+# Ward method
+hc_ward <- agnes(cluster_data, metric = "euclidean", method = "ward")
+
+# Average method
+hc_average <- agnes(cluster_data, metric = "euclidean", method = "average")
+
+# Complete method
+hc_complete <- agnes(cluster_data, metric = "euclidean", method = "complete")
+
+# Single method
+hc_single <- agnes(cluster_data, metric = "euclidean", method = "single")
+
+
+fviz_dend(hc_ward, k = 5, palette = "npg")
+#rect.hclust(hc_ward, k = 5, border = "red")
+
+# pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
+# rect.hclust(hc_ward, k = 4, border = "red")
+# 
+# fviz_nbclust(cluster_data, kmeans, method = "wss")
+# 
+# fviz_nbclust(cluster_data, kmeans, method = "silhouette")
 ```
 
 ```{r}
@@ -313,7 +452,28 @@ my_theme <- function(base_size = 12) {
 
 ```
 
+#### Non-hierarchical Cluster Analysis
+
+To refine and validate the results obtained from the hierarchical analysis, a non-hierarchical method (k-means) was applied. Unlike hierarchical approaches, k-means requires specifying the number of clusters (k) beforehand and iteratively update assignments until finding the best approach. 
+
+The number of clusters was set to k = 5, in line with the hierarchical results. Two initialization strategies were used to build a comparison and benchmark with the previous approach: 
+
+1. Random centroids: Initial cluster centroids were randomly selected, and each country was assigned to the nearest centroid based on Euclidean distance. Centroids were then recalculated as the mean of all countries assigned to each cluster. The assignment and centroid recalculation steps were repeated iteratively until the cluster assignments stabilized. Using random initialization with seed ‘123’, we achieved a total within-cluster sum of squares (WSS) of 15.51587. 
+
+2. Deterministic centroids: Initial centroids were taken from the hierarchical Ward solution. Countries were assigned to the nearest hierarchical centroids, and cluster centers were iteratively updated until convergence. This approach yielded a WSS of 15.60823. 
+
+The second approach, which combined Hierarchical and Non-Hierarchical methods, produced a stable solution and fully replicable, even if the total WSS is slightly higher than that of a random start. Using hierarchical centroids as initial seeds ensured that the k-means solution was robust, replicable, and consistent with the overall structure identified in the dendrogram. Moreover, the deterministic method is more interpretable, supporting the decision to choose this approach over random initialization despite the marginal difference in WSS. The final interpretation of the clusters is presented in the Results section. 
+
+## Results
+
+Before computing the Cluster Analysis, a preliminary inspection of the country-level distributions (figure X – boxplot) identified the Hungary (HU) as an outlier on the immigration dimension. Addressing potential data distortions is a critical step for a robust analysis, particularly when employing methods sensitive to extreme values, such as hierarchical or partition clustering (k-means). 
+
+
+
+
 ```{r}
+#| label: fig-pairwise-graph
+#| fig-cap: "Pairwise Country Comparisons Across Dimensions"
 #faceting 1
 
 pairs_df <- country_means2 %>%
@@ -376,7 +536,7 @@ facet_plot <- ggplot(pairs_df, aes(x = value1, y = value2, color = pair)) +
   ))+
   
   labs(
-    title = "Pairwise Country Comparisons Across Dimensions",
+   # title = "Pairwise Country Comparisons Across Dimensions",
     x = NULL,
     y = NULL
   ) +
@@ -388,8 +548,8 @@ print(facet_plot)
 ```
 
 ```{r}
-colnames(pcf_varimax$loadings) <- c("Trust","Immigration", "Equality")
-fa.diagram(pcf_varimax)
+# colnames(pcf_varimax$loadings) <- c("Trust","Immigration", "Equality")
+# fa.diagram(pcf_varimax)
 
 ```
 
@@ -416,42 +576,7 @@ ggplot(loadings_long, aes(x = Component, y = variable, fill = Loading)) +
 
 CLUSTER ANALYSIS STARTS HERE!!!
 
-```{r}
-# 1. Prepare data (select only numeric variables for clustering)
-cluster_data <- country_means2[, c("trust", "immigration", "equality")]
-rownames(cluster_data) <- country_means2$country
 
-# 2. Hierarchical methods to determine number of clusters
-
-# Ward method
-hc_ward <- agnes(cluster_data, metric = "euclidean", method = "ward")
-
-# Average method
-hc_average <- agnes(cluster_data, metric = "euclidean", method = "average")
-
-# Complete method
-hc_complete <- agnes(cluster_data, metric = "euclidean", method = "complete")
-
-# Single method
-hc_single <- agnes(cluster_data, metric = "euclidean", method = "single")
-
-
-print(hc_ward$ac)
-print(hc_average$ac)
-print(hc_complete$ac)
-print(hc_single$ac)
-
-
-pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
-rect.hclust(hc_ward, k = 5, border = "red")
-
-pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
-rect.hclust(hc_ward, k = 4, border = "red")
-
-fviz_nbclust(cluster_data, kmeans, method = "wss")
-
-fviz_nbclust(cluster_data, kmeans, method = "silhouette")
-```
 
 ```{r}
 #Random k-means
@@ -785,7 +910,7 @@ table(pt_df_ca$age_group)
 #        fill = "Observed - Expected")
 ```
 
-## Results
+
 
 ## Discussion
 
