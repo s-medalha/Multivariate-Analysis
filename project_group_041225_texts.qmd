@@ -1,28 +1,21 @@
 ---
 title: Perspectives on Immigration, Gender Equality and Trust in Public Institutions in Europe
 author:
-  - name: Ana Rasinhas
-    affiliations:
-      name: "20241393"
-  - name: Daniela Gonçalves
-    affiliations:
-      name: "20251421"
-  - name: Pedro Fernandes
-    affiliations:
-      name: "20251418"
-  - name: Ricardo Branco
-    affiliations:
-      name: "20251164"
-  - name: Samuel Medalha
-    affiliations:
-      name: "20250080"
+  - Ana Rasinhas (20241393)
+  - Daniela Gonçalves (20251421)
+  - Pedro Fernandes (20251418)
+  - Ricardo Branco (20251164)
+  - Samuel Medalha (20250080)
 abstract: |
   {{< lipsum 1 >}}
 date: last-modified
 date-format: long
 format:
-  academic-typst:
-    section-numbering: "1.1.1"
+  pdf:
+  #academic-typst:
+    #section-numbering: "1.1.1"
+    document-class: article
+    number-sections: true
     toc: true
 execute:
   echo: false
@@ -157,23 +150,26 @@ Therefore, using the questions of ESS 11, we aim at the following:
 
 The data used is from the European Social Survey (ESS), more specifically the Round 11 data (2023/24), Edition 4.0. The 11th ESS round covers 30 countries, where data was collected based on an hour-long face-to-face interview, covering a variety of core topics repeated from previous rounds of the survey and two modules developed for Round 11: “Gender in Contemporary Europe: Rethinking Equality and the Backlash” and “Social Inequalities in Health and their Determinants”. The universe considered consists of individuals aged from 15 and over, resident within private households, regardless of their nationality, citizenship, language or legal status, in the 30 considered countries.
 
+From the full dataset, only variables relevant to the conceptual domains of institutional trust, attitudes toward immigration, and beliefs about social and gender equality were retained, comprising 16 variables. The selected variables and associated questions can be seen in @tbl-vars in the Appendix.
+
 Due to the different Likert-type scales, all analytical variables were standardized. Without standardization, variables with larger numerical ranges would dominate factor extraction and clustering. Standardization ensures that each variable contributes equally to the underlying covariance structure.
 
 The mentioned version of the survey collected individual-level citizen responses across 30 countries, resulting in 50.116 observations. To limit the study to European Union (EU) member states, respondents from non-EU countries were removed from the dataset, resulting in a final sample covering 22 countries.
 
 The ESS uses several numeric codes to represent non-substantive responses, such as “Refusal” (codes 77 or 7), “Don’t know” (codes 88 or 8), and “No answer” (codes 99 or 9). All these incomplete observations were removed from the analysis, to ensure that the analytical dataset contained only complete cases, which is a requirement for the factor analysis procedures used in this study. At the end, this process led to 28.303 observations.
 
-Because ESS sample sizes vary across countries due to their national sampling designs, we chose to retain the original number of observations per country to preserve the importance and weight attributed to each country in the survey.
+Because ESS sample sizes vary across countries due to their national sampling designs, we chose to retain the original number of observations per country to preserve the importance and weight attributed to each country in the survey. The sample size of each country can be seen in @tbl-obs in the Appendix.
 
 All data preparation, factor analyses, and clustering procedures were performed in R, using standard packages for multivariate analysis.
 
 ### Factor Analysis
 
-Factor Analysis (FA) was chosen over Principal Component Analysis (PCA) because the goal was to identify underlying concepts, such as institutional trust, attitudes toward immigration, and beliefs about gender equality, and not simply data reduction. FA is specifically designed to model these intangible factors that explain the correlations among the observed survey items, which aligns directly with the theoretical nature of the concepts being studied. 
+Factor Analysis (FA) was chosen over Principal Component Analysis (PCA) because the goal was to identify underlying concepts, such as institutional trust, attitudes toward immigration, and beliefs about gender equality, and not simply data reduction. FA is specifically designed to model these intangible factors that explain the correlations among the observed survey items, which aligns directly with the theoretical nature of the concepts being studied.
 
 ```{r}
 #| label: KMO
 #| warning: false
+#| include: false
 KMO(scaled_data)
 ```
 
@@ -223,7 +219,7 @@ ggplot(data = melted_cormat, aes(Var2, Var1, fill = value))+
  coord_fixed()
 ```
 
-The correlation matrix shows that each variable has, at least, one absolute correlation coefficient of 0.5 with another variable.  
+The correlation matrix shows that each variable has, at least, one absolute correlation coefficient of 0.5 with another variable.\
 Therefore, we can conclude that correlations among variables were sufficiently strong to warrant factor extraction.
 
 ```{r}
@@ -242,21 +238,15 @@ Although Pearson’s criterion recommends retaining factors that together explai
 
 ```{r}
 #| label: fig-scree-plot
-scree(scaled_data, factors = FALSE)
+#| fig-cap: Scree plot
+scree(scaled_data, factors = FALSE, main = "")
 ```
 
 #### Rotation
-  
-Factor extraction was repeated using both Principal Component Analysis (PCA) and Principal Axis Factoring (PAF) combined with Varimax and Quartimax rotations. Orthogonal rotations were chosen to produce factors that are uncorrelated and easier to interpret. Loadings were examined to determine the variables most strongly associated with each factor. Although no substantive interpretations are presented in this section, these factors form the basis for the construction of factor scores. 
 
-PCA with *Varimax* rotation showed the most interpretable and stable factor structure, as well as better loadings and cumulative variance. This solution produced clearly defined factors with high loadings on conceptually coherent variables, facilitating theoretical interpretation. Other factors structures were tested and are presented in Annex XX. 
+Factor extraction was repeated using both Principal Component Analysis (PCA) and Principal Axis Factoring (PAF) combined with Varimax and Quartimax rotations. Orthogonal rotations were chosen to produce factors that are uncorrelated and easier to interpret. Loadings were examined to determine the variables most strongly associated with each factor. Although no substantive interpretations are presented in this section, these factors form the basis for the construction of factor scores.
 
-```{r}
-#print(pcf_varimax$loadings, cutoff = 0.6, digits = 3)
-#print(pcf_quartimax$loadings, cutoff = 0.6, digits = 3)
-#print(paf_varimax$loadings, cutoff = 0.6, digits = 3)
-#print(paf_quartimax$loadings, cutoff = 0.6, digits = 3)
-```
+PCA with *Varimax* rotation showed the most interpretable and stable factor structure, as well as better loadings and cumulative variance. This solution produced clearly defined factors with high loadings on conceptually coherent variables, facilitating theoretical interpretation. Other factors structures were tested and are presented in Annex XX.
 
 ```{r}
 #| label: tbl-varimax-results
@@ -300,7 +290,6 @@ After the use of Factor Analysis – in which we found three latent dimensions �
 #### Hierarchical Cluster Analysis
 
 To classify countries based on their average, a hierarchical cluster analysis was performed. Distances between countries were computed using Euclidean distance, and multiple linkage methods (Ward’s method, Average linkage, Centroid, Complete linkage, and Single linkage) were compared to evaluate the stability and structure of the resulting clusters. The Ward’s method was chosen, because it minimizes within-cluster variance and it produces more interpretable and compact groupings, which allows for better characterization of countries according to their broader attitudinal profiles rather than detect minimal chaining or highly irregular clusters.
-
 
 ```{r}
 #| label: country-means
@@ -389,11 +378,11 @@ plot_data <- do.call(rbind, lapply(methods, function(method) {
     labs(x = "Number of clusters", y = "R-squared")
 ```
 
-Several possible cut-points were examined, and a five-cluster solution was chosen, as the R² values increased substantially up to five clusters before leveling off. The R2 with 5 clusters is 0.753, which is a significant improvement from the 4-cluster solution (R2 = 0.654 with 4 clusters), while the jump from 5 to 6 clusters does not lead to a great improvement in the R2 (R2 = 0.804 with 6 clusters). 
+Several possible cut-points were examined, and a five-cluster solution was chosen, as the R² values increased substantially up to five clusters before leveling off. The R2 with 5 clusters is 0.753, which is a significant improvement from the 4-cluster solution (R2 = 0.654 with 4 clusters), while the jump from 5 to 6 clusters does not lead to a great improvement in the R2 (R2 = 0.804 with 6 clusters).
 
-Additionally, the analysis of the Ward dendrogram in @fig-dendrogram leads to the same conclusion, as the cut should be done in the largest vertical distance without any horizontal mergers. 
+Additionally, the analysis of the Ward dendrogram in @fig-dendrogram leads to the same conclusion, as the cut should be done in the largest vertical distance without any horizontal mergers.
 
-Therefore, this solution demonstrated strong coherence, stability of the grouping across alternative linkage methods, and it was supported by the cluster dendrogram, while being interpretable. 
+Therefore, this solution demonstrated strong coherence, stability of the grouping across alternative linkage methods, and it was supported by the cluster dendrogram, while being interpretable.
 
 ```{r}
 #| label: fig-dendrogram
@@ -417,7 +406,7 @@ hc_complete <- agnes(cluster_data, metric = "euclidean", method = "complete")
 hc_single <- agnes(cluster_data, metric = "euclidean", method = "single")
 
 
-fviz_dend(hc_ward, k = 5, palette = "npg")
+fviz_dend(hc_ward, k = 5, sub = "", palette = "npg")
 #rect.hclust(hc_ward, k = 5, border = "red")
 
 # pltree(hc_ward, main = "Dendrogram - Ward Method", hang = -1, cex = 0.8)
@@ -452,24 +441,223 @@ my_theme <- function(base_size = 12) {
 
 ```
 
+```{r}
+#Random k-means
+set.seed(123) #for replicability
+
+kmeans_result <- kmeans(cluster_data, centers = 5, nstart = 25, iter.max = 100) # nstart = different initial positions; 
+
+# print(kmeans_result)
+
+country_clusters <- country_means2
+country_clusters$cluster <- as.factor(kmeans_result$cluster)
+
+```
+
+```{r}
+#deterministic k-means using hierarchical method
+hcward <- agnes(cluster_data, method = "ward")
+
+groups_hcward <- cutree(as.hclust(hcward), k = 5) #cut the tree into 5 clusters (k)
+
+initial_centers <- aggregate(cluster_data, by = list(groups_hcward), FUN = mean) #compute deterministic initial centroids
+
+initial_centers <- initial_centers[ ,-1] # remove group label column
+
+#compute k-means
+kmeans_result_d <- kmeans(cluster_data, centers = initial_centers, iter.max = 100)
+
+#merge to data
+country_clusters_d <- country_means2
+country_clusters_d$cluster <- as.factor(kmeans_result_d$cluster)
+
+# print(kmeans_result_d$centers)
+# print(table(country_clusters_d$cluster))
+```
+
 #### Non-hierarchical Cluster Analysis
 
-To refine and validate the results obtained from the hierarchical analysis, a non-hierarchical method (k-means) was applied. Unlike hierarchical approaches, k-means requires specifying the number of clusters (k) beforehand and iteratively update assignments until finding the best approach. 
+To refine and validate the results obtained from the hierarchical analysis, a non-hierarchical method (k-means) was applied. Unlike hierarchical approaches, k-means requires specifying the number of clusters (k) beforehand and iteratively update assignments until finding the best approach.
 
-The number of clusters was set to k = 5, in line with the hierarchical results. Two initialization strategies were used to build a comparison and benchmark with the previous approach: 
+The number of clusters was set to k = 5, in line with the hierarchical results. Two initialization strategies were used to build a comparison and benchmark with the previous approach:
 
-1. Random centroids: Initial cluster centroids were randomly selected, and each country was assigned to the nearest centroid based on Euclidean distance. Centroids were then recalculated as the mean of all countries assigned to each cluster. The assignment and centroid recalculation steps were repeated iteratively until the cluster assignments stabilized. Using random initialization with seed ‘123’, we achieved a total within-cluster sum of squares (WSS) of 15.51587. 
+1.  Random centroids: Initial cluster centroids were randomly selected, and each country was assigned to the nearest centroid based on Euclidean distance. Centroids were then recalculated as the mean of all countries assigned to each cluster. The assignment and centroid recalculation steps were repeated iteratively until the cluster assignments stabilized. Using random initialization with seed ‘123’, we achieved a total within-cluster sum of squares (WSS) of 15.51587.
 
-2. Deterministic centroids: Initial centroids were taken from the hierarchical Ward solution. Countries were assigned to the nearest hierarchical centroids, and cluster centers were iteratively updated until convergence. This approach yielded a WSS of 15.60823. 
+2.  Deterministic centroids: Initial centroids were taken from the hierarchical Ward solution. Countries were assigned to the nearest hierarchical centroids, and cluster centers were iteratively updated until convergence. This approach yielded a WSS of 15.60823.
 
-The second approach, which combined Hierarchical and Non-Hierarchical methods, produced a stable solution and fully replicable, even if the total WSS is slightly higher than that of a random start. Using hierarchical centroids as initial seeds ensured that the k-means solution was robust, replicable, and consistent with the overall structure identified in the dendrogram. Moreover, the deterministic method is more interpretable, supporting the decision to choose this approach over random initialization despite the marginal difference in WSS. The final interpretation of the clusters is presented in the Results section. 
+The second approach, which combined Hierarchical and Non-Hierarchical methods, produced a stable solution and fully replicable, even if the total WSS is slightly higher than that of a random start. Using hierarchical centroids as initial seeds ensured that the k-means solution was robust, replicable, and consistent with the overall structure identified in the dendrogram. Moreover, the deterministic method is more interpretable, supporting the decision to choose this approach over random initialization despite the marginal difference in WSS. The final interpretation of the clusters is presented in the Results section.
 
-## Results
+## Results and Discussion
 
-Before computing the Cluster Analysis, a preliminary inspection of the country-level distributions (figure X – boxplot) identified the Hungary (HU) as an outlier on the immigration dimension. Addressing potential data distortions is a critical step for a robust analysis, particularly when employing methods sensitive to extreme values, such as hierarchical or partition clustering (k-means). 
+### Cluster Analysis
 
+Before computing the Cluster Analysis, a preliminary inspection of the country-level distributions (figure X – boxplot) identified the Hungary (HU) as an outlier on the immigration dimension. Addressing potential data distortions is a critical step for a robust analysis, particularly when employing methods sensitive to extreme values, such as hierarchical or partition clustering (k-means).
 
+The clustering procedures employed, the hierarchical clustering with Ward’s method followed by k-means refining, are known to be sensitive to outliers. Ward's method minimizes the total within-cluster variance, which can be easily influenced by single extreme points.
 
+However, this deviation reflects a stable empirical pattern. Comparative studies show Hungary recording the most negative attitudes towards immigration within the European Union. For example, research like "Keep Europe for the Europeans’: The Role of Threat Perceptions and Intergroup Contact for Explaining Attitudes towards Immigrants in Hungary" strongly supports the characterization of Hungary's highly restrictive attitudinal profile. Therefore, as this profile represents a genuine and documented country-level structure, Hungary was retained in the dataset.
+
+From the analysis of the box plot, it could be argued that there are extreme values in the support of gender equality and trust in public institutions factors that could impact the formation of the clusters. However, there are no countries with extreme values in all factors nor with values outside the limits of the box plot.
+
+Nevertheless, the analysis demonstrated that the presence of Hungary did not distort the overall cluster solution. Instead of pulling neighboring clusters or merging with unrelated profiles, the atypical case of Hungary, along with Slovakia, formed a small but interpretable cluster (cluster 5). This outcome confirms that the extreme values of Hungary helped reveal a meaningful structural difference in the data rather than introducing a statistical artifact, thereby validating the decision for its retention.
+
+#### Hierarchical Cluster Analysis
+
+Multiple hierarchical clustering methods were computed and compared, as already mentioned in the previous chapter.
+
+Ward's method was selected as the optimal approach due to its balance between strong clustering structure (Agglomerative Coefficient = 0.853) and practical interpretability. The resulting dendrogram (@fig-dendrogram) shows a clear hierarchical structure with five distinct clusters at the chosen cut height.
+
+#### Non-hierarchical Cluster Analysis
+
+Following the practice of combining the exploratory strengths of hierarchical techniques with the optimization advantages of partition-based algorithms, a k-means analysis was subsequently applied. We used the centroids derived from the hierarchical clustering (Ward’s method) as initial seeds. The results are very similar to the hierarchical and non-hierarchical ones. The k-means analysis only used one iteration to converge, meaning that the solution is stable.
+
+The random k-means (25 starts, set.seed(123) for replicability) procedure also had been tested. Both procedures (hierarchical and non-hierarchical) produced broadly similar clustering patterns.\
+Minor differences emerged between the two methods. Specifically, three countries, Ireland, Belgium, and Slovenia, were assigned to different clusters, an expected outcome given the sensitivity of k-means to initialization. Given its stronger conceptual consistency and homogeneous grouping structure, the k-means with deterministic initialization was the solution adopted as final.
+
+#### Final Cluster Solution
+
+The optimized k-means solution resulted in five clusters of sizes 9, 3, 5, 3, and 2 countries. @tbl-centroids presents the cluster’s centroids, which reflect the average standardized scores for trust in public institutions, the attitude towards immigration, and perceptions on gender equality within each group.
+
+These centroids represent the defining attitudinal signatures of the respective clusters.
+
+| **Cluster** | **Size** | **Trust** | **Immigration** | **Equality** | **Countries** |
+|------------|------------|------------|------------|------------|------------|
+| 1 | 9 | 0.0079 | 0.3879 | -0.3723 | Ireland (IE), Belgium (BE), Slovenia (SI), Austria (AT), Germany (DE), Estonia (EE), Lithuania (LT), Latvia (LV), Poland (PL) |
+| 2 | 3 | -0.9594 | -1.2188 | -0.1952 | Bulgaria (BG), Cyprus (CY), Greece (GR) |
+| 3 | 5 | -0.7199 | 0.3501 | 1.1542 | Spain (ES), France (FR), Croatia (HR), Italy (IT), Portugal (PT) |
+| 4 | 3 | 1.7990 | 0.8450 | 0.5326 | Finland (FI), Netherlands (NL), Sweden (SE) |
+| 5 | 2 | 0.5045 | -2.060 | -1.7160 | Hungary (HU), Slovakia (SK) |
+
+: Cluster Centroids {#tbl-centroids}
+
+The within-cluster sum of squares indicates relatively compact clusters, and the ratio of between-cluster to total sum of squares, 75.4%, demonstrates substantial separation among groups. These results confirm that the five-cluster configuration captures meaningful cross-national differences in trust in public institutions, the attitude towards immigration, and perceptions on gender equality.
+
+Following standard practice for validating cluster solutions, a neighbouring four-cluster and six-cluster solutions were also tested. The four-cluster alternative proved inadequate, as it merged clusters 2 and 5. This was problematic because Hungary (HU) exhibited extreme values on attitude towards immigration factor and required isolation in a distinct cluster alongside Slovakia (SK). Forcing these outlier cases into a larger grouping would have concealed important country-specific patterns. The six-cluster solution fragmented the cluster one by isolating Lithuania and Latvia in a new cluster. This over-segmentation reduced interpretability without meaningful improvement in substantive understanding. The five-cluster solution was therefore retained as the most coherent and substantively informative model, with comparative results presented in the Appendix.
+
+#### Cluster Interpretation and Visualization
+
+The scatter plots in @fig-cluster-scatterplot illustrate the distribution of countries across the three dimensions, with cluster membership represented by color. The visualization seems to confirm the five-cluster solution, showing separation between groups with minimal overlap, although the visualization in 2D simplifies the complete three-dimensional structure.
+
+```{r}
+#| label: fig-cluster-scatterplot
+#| fig-cap: Cluster Scatterplot
+
+cluster_colors <- c(
+  "1" = "#E69F00",
+  "2" = "#0072B2",
+  "3" = "#009E73",
+  "4" = "#D55E00",
+  "5" = "#CC79A7"
+)
+
+# Create pairs dataframe
+pairs_df2 <- country_clusters_d %>%
+  mutate(id = row_number()) %>%
+  crossing(
+    tibble(var1 = c("equality", "equality", "immigration"),
+           var2 = c("immigration", "trust", "trust"))
+  ) %>%
+  mutate(
+    value1 = case_when(
+      var1 == "equality" ~ equality,
+      var1 == "immigration" ~ immigration,
+      var1 == "trust" ~ trust
+    ),
+    value2 = case_when(
+      var2 == "equality" ~ equality,
+      var2 == "immigration" ~ immigration,
+      var2 == "trust" ~ trust
+    )
+  ) %>%
+  select(id, country, cluster, var1, var2, value1, value2)
+
+# Add pair column
+pairs_df2 <- pairs_df2 %>%
+  mutate(pair = paste(var1, "vs", var2))
+
+# Create reference lines dataframe with dynamic intercepts
+reference_lines2 <- tibble(
+  pair = c("equality vs immigration", "equality vs trust", "immigration vs trust"),
+  var1 = c("equality", "equality", "immigration"),
+  var2 = c("immigration", "trust", "trust")
+) %>%
+  mutate(
+    # Horizontal intercept (mean of var2)
+    h_intercept = case_when(
+      var2 == "immigration" ~ mean(country_clusters_d$immigration, na.rm = TRUE),
+      var2 == "trust" ~ mean(country_clusters_d$trust, na.rm = TRUE),
+      var2 == "equality" ~ mean(country_clusters_d$equality, na.rm = TRUE)
+    ),
+    # Vertical intercept (mean of var1)
+    v_intercept = case_when(
+      var1 == "immigration" ~ mean(country_clusters_d$immigration, na.rm = TRUE),
+      var1 == "trust" ~ mean(country_clusters_d$trust, na.rm = TRUE),
+      var1 == "equality" ~ mean(country_clusters_d$equality, na.rm = TRUE)
+    )
+  )
+
+# Create the plot
+facet_plot_2 <- ggplot(pairs_df2, aes(x = value1, y = value2, color = cluster)) +
+  
+  # Dynamic reference lines
+  geom_hline(data = reference_lines2, aes(yintercept = h_intercept),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  geom_vline(data = reference_lines2, aes(xintercept = v_intercept),
+             linetype = "dashed", color = "gray50", alpha = 0.5) +
+  
+  geom_point(size = 3, alpha = 0.7) +
+  geom_text_repel(aes(label = country), size = 3.5, show.legend = FALSE) +
+  
+  # Facets
+  facet_wrap(~ pair) +
+  coord_equal() +
+  
+  scale_color_manual(values = cluster_colors) +
+  
+  labs(
+   # title = "Country cluster profiles across three dimension model",
+    x = NULL,
+    y = NULL,
+    color = "Cluster"
+  ) +
+  
+
+  
+  my_theme() +
+  theme(
+    legend.position = "right",
+    panel.background = element_rect(fill = "grey95", color = NA),  # Light grey background
+    panel.border = element_rect(color = "grey70", fill = NA, linewidth = 0.5)  # Optional: border around each panel
+  )
+
+print(facet_plot_2)
+```
+
+Cluster 1, with nine members, needs additional discussion given its relatively higher within-cluster variance (within ss per country = 0.86) and weaker silhouette coefficient (0.211) compared to other clusters. Although this weak pattern, this cluster reflects the nature of this group - countries with balanced, moderated profiles across all three dimensions. These nations do not exhibit extreme positions on institutional trust, immigration attitudes and gender equality perceptions, but rather occupy the “middle ground” of EU attitudes.
+
+Countries with moderate scores cluster together precisely because they lack the distinctive extremes that characterize other groups. This result in a larger, more diffuse cluster, where members are similar with their moderation but inevitably show greater internal variation than clusters defined by the extreme values. The cluster remains valid as members are still more similar to each other than to any other cluster.
+
+| **Country** | **Distance to own cluster** | **Nearest alternative** | **Distance to the nearest neighbor** |
+|------------------|------------------|------------------|--------------------|
+| AT - Austria | 0.981 | 2 | 1.775 |
+| BE - Belgium | 0.956 | 3 | 1.202 |
+| DE - Germany | 0.690 | 4 | 1.552 |
+| EE - Estonia | 0.609 | 2 | 1.899 |
+| IE - Ireland | 0.941 | 4 | 1.154 |
+| LT - Lithuania | 1.047 | 2 | 2.283 |
+| LV - Latvia | 1.376 | 2 | 1.8 |
+| PL - Poland | 0.807 | 2 | 1.408 |
+| SI - Slovenia | 0.717 | 3 | 1.075 |
+
+: Cluster 1 Statistics {#tbl-cluster1}
+
+#### Factor Analysis
+
+The first factor is *trust in public institutions*, which derives from six variables that capture citizens’ trust in politicians, political parties, National and European Parliament, the legal system, and the United Nations.
+
+The second factor captures *attitudes toward immigration* and comprises six variables measuring citizens’ openness to immigration and their evaluation of immigration’s contribution to the host country from economic, cultural, and quality-of-life perspectives. For analytical parsimony, we decided on three factors instead of four, which would have implied splitting this dimension into two separate constructs. Hence, this factor represents a net perspective on immigration, combining both openness and perceived contribution, even though these may lead to distinct conclusions.
+
+The third and final latent dimension is the *perception on gender equality*, comprising four variables, it assesses the importance citizens attribute to gender equality in the domains of work, wages, corporate management, and political activity.
 
 ```{r}
 #| label: fig-pairwise-graph
@@ -547,6 +735,30 @@ facet_plot <- ggplot(pairs_df, aes(x = value1, y = value2, color = pair)) +
 print(facet_plot)
 ```
 
+@fig-pairwise-graph presents a comparison of mean factor scores across countries. The first quadrant (upper right) contains the countries scoring above the sample average on the respective indicators, whereas the third quadrant (lower left) comprises those scoring below the average. Sweden, Finland, the Netherlands, Belgium, and Ireland display positive scores across all three factors. In contrast, Greece is the only country exhibiting negative scores on all factors. Examining the factors individually, Sweden, Finland, and the Netherlands record the highest levels of trust in public institutions (scores above 1), while Croatia and Bulgaria record the lowest (scores below 1). Regarding attitudes toward immigration, Sweden, Estonia, and Germany rank highest, whereas Hungary, Cyprus and Slovakia rank lowest. Finally, in terms of the importance attributed to gender equality, Portugal, Spain, and France score highest, while Slovakia, Lithuania, and Latvia score lowest.
+
+#### Cluster Analysis
+
+The Cluster Analysis identified five groups of countries that exhibit internal similarity with respect to the factor-derived dimensions.
+
+| **Cluster** | **Trust**      | **Immigration** | **Gender Equality** |
+|-------------|----------------|-----------------|---------------------|
+| 1           | Moderate       | Mostly High (+) | Moderate            |
+| 2           | Low (-)        | Low (-)         | Low (-) / High (+)  |
+| 3           | Low (-)        | Mostly High (+) | High (+)            |
+| 4           | Very High (++) | High (+)        | High (+)            |
+| 5           | High (+)       | Very Low (--)   | Very Low (--)       |
+
+: Cluster Summary {#tbl-cluster-summary}
+
+Given the three-dimensional structure, a summary table was also produced, examining the scores of the countries included in each cluster to facilitate the interpretation. Cluster 1 is the largest group (nine countries) and presents scores close to the overall mean, both positive and negative, regarding institutional trust and attitudes to gender equality. These countries are therefore characterised as *moderate countries*. Countries in Cluster 2 are defined by low levels of institutional trust and negative attitudes towards immigration and are consequently labelled *distrustful of institutions and closed to immigration*. Cluster 3 contains countries that are *distrustful of institutions yet open to immigration and supportive of gender equality*. Cluster 4 includes the countries that stand out as most positively across all dimensions. They exhibit *high trust in institutions, openness to immigration, and support for gender equality*. Finally, Cluster 5 consists of countries characterized by high institutional trust but negative attitudes towards immigration and a lower valuation of gender equality, hence described as *trusting institutions but closed to immigration and not prioritizing gender equality*.
+
+#### Geographical Patterns of the Clusters
+
+The geographical distribution of the clusters reveals clear spatial patterns (Figure X). The “moderate countries” are located predominantly in Central Europe and around the Baltic Sea, with Ireland as an exception. Countries most “distrustful of institutions and closed to immigration” are concentrated in South-eastern Europe (Bulgaria, Greece, and Cyprus). Countries “distrustful of institutions but open to immigration and supportive of gender equality” are mainly located in South-western Europe (Portugal, Spain, France, and Italy), except for Croatia. Countries with “higher trust in institutions, openness to immigration, and support for gender equality” are concentrated in Northern Europe, except for the Netherlands. Finally, the cluster of countries that “trust institutions but are closed to immigration and do not value gender equality” comprises Hungary and Slovakia, neighboring Central European states.
+
+These results may reflect the profile of national political leadership, which shares notable personal and ideological affinities across countries. Overall, these patters suggest that geographical proximity, as well as historical and political linkages, may contribute to shared value orientations and behavioral tendencies in the analysed domains.
+
 ```{r}
 # colnames(pcf_varimax$loadings) <- c("Trust","Immigration", "Equality")
 # fa.diagram(pcf_varimax)
@@ -554,6 +766,8 @@ print(facet_plot)
 ```
 
 ```{r}
+#| eval: false
+#| include: false
 loadings_df <- as.data.frame(pcf_varimax$loadings[,])
 loadings_df$variable <- rownames(loadings_df)
 
@@ -574,44 +788,6 @@ ggplot(loadings_long, aes(x = Component, y = variable, fill = Loading)) +
        x = "Components", y = "Variables")
 ```
 
-CLUSTER ANALYSIS STARTS HERE!!!
-
-
-
-```{r}
-#Random k-means
-set.seed(123) #for replicability
-
-kmeans_result <- kmeans(cluster_data, centers = 5, nstart = 25, iter.max = 100) # nstart = different initial positions; 
-
-print(kmeans_result)
-
-country_clusters <- country_means2
-country_clusters$cluster <- as.factor(kmeans_result$cluster)
-
-```
-
-```{r}
-#deterministic k-means using hierarchical method
-hcward <- agnes(cluster_data, method = "ward")
-
-groups_hcward <- cutree(as.hclust(hcward), k = 5) #cut the tree into 5 clusters (k)
-
-initial_centers <- aggregate(cluster_data, by = list(groups_hcward), FUN = mean) #compute deterministic initial centroids
-
-initial_centers <- initial_centers[ ,-1] # remove group label column
-
-#compute k-means
-kmeans_result_d <- kmeans(cluster_data, centers = initial_centers, iter.max = 100)
-
-#merge to data
-country_clusters_d <- country_means2
-country_clusters_d$cluster <- as.factor(kmeans_result_d$cluster)
-
-print(kmeans_result_d$centers)
-print(table(country_clusters_d$cluster))
-```
-
 ```{r}
 #Compare methods random vs deterministic
 # Compare cluster assignments
@@ -623,12 +799,12 @@ comparison <- data.frame(
   arrange(hierarchical_kmeans, random_kmeans)
 
 # Check agreement
-print(comparison)
+#print(comparison)
 #write_csv(comparison, "C:/Users/ricardo.branco/Downloads/comparison.csv")
 
 # Within-cluster sum of squares (lower is better)
-cat("Deterministic total WSS:", kmeans_result_d$tot.withinss, "\n")
-cat("Random total WSS:", kmeans_result$tot.withinss, "\n")
+#cat("Deterministic total WSS:", kmeans_result_d$tot.withinss, "\n")
+#cat("Random total WSS:", kmeans_result$tot.withinss, "\n")
 
 
 ```
@@ -693,7 +869,6 @@ facet_plot_2 <- ggplot(pairs_df2,
   
   my_theme()
 
-print(facet_plot_2)
 
 ```
 
@@ -740,10 +915,12 @@ ggplot(europe_map, aes(x = long, y = lat, group = group, fill = cluster)) +
   )
 ```
 
-STARTS HERE the CORRESPONDENCE ANALYSIS
-
 ```{r}
+#| eval: false
+#| include: false
 
+
+# STARTS HERE the CORRESPONDENCE ANALYSIS
 pt_df_ca <- raw_data %>%
   filter(cntry == "PT") %>%
   filter(icgndra %in% c(1, 2)) %>%
@@ -790,6 +967,8 @@ hist(pt_df_ca$agea, main = "Age Distribution in Portugal plus France",
 ```
 
 ```{r}
+#| eval: false
+#| include: false
 pt_df_ca <- pt_df_ca %>%
   mutate(
     age_group = case_when(
@@ -910,66 +1089,87 @@ table(pt_df_ca$age_group)
 #        fill = "Observed - Expected")
 ```
 
+### Limitations and Problems Faced
 
+The main limitation of Factor Analysis and Cluster Analysis is that they are highly subjective and dependent on the set of observations. We tried different question combinations and chose the one that provided the best, most interpretable results. It could, however, be that if we had chosen different questions, even if for the same issued, we would have obtained different factors and results.
 
-## Discussion
+The same logic can be applied with the countries selected. The database used does not cover the entire set of European Union Member States, as this round of the survey was not conducted in five countries – Czechia, Denmark, Luxembourg, Malta, and Romania. Additionally, the survey lacks a question on trust in the government (i.e., the executive branch of the state), preventing a fully comprehensive assessment of trust in the key pillars of democratic governance.
 
-## Conclusions
+An opportunity for further enrichment lies in the reproduction of this project using previous rounds of the European Social Survey, which would allow for an examination of temporal evolution of factor scores and cluster membership.
 
-## References
+## Conclusion
+
+In this project, we aimed at examining how European citizens perceive three central and highly debated subjects – immigration, gender equality, and trust in public institutions – using data from Round 11 of the European Social Survey. By combining Factor Analysis and Cluster Analysis, we sought to extract and interpret both the latent attitudinal structures underlying individual responses and the broader country-level patterns that emerge across the European Union.
+
+From the Factor Analysis, we were able to identify three coherent and theoretically meaningful factors corresponding to the subjects mentioned beforehand: trust in public institutions, attitudes toward immigration, and perceptions on gender equality. The results underlined the complex public opinion of European citizens on these matters, as factor scores vary considerably across country in each topic. Additionally, we can conclude that higher trust in public institutions does not necessarily translate into more favourable attitudes towards immigration and gender equality.
+
+Utilizing these latent dimensions, the Cluster Analysis identified five distinct country clusters with clear internal coherence and interpretability. These clusters reflect different degrees of trust in public institutions, attitudes towards immigration, and perceptions on gender equality, but also meaningful geographical and political patterns across the EU.
+
+Northern European countries are notable for their consistent trust in public institutions, receptiveness to immigration, and endorsement of gender equality. Countries in the Southern and South-eastern Europe often exhibit less trust in public institutions alongside more polarized opinions on immigration and equality. Central and Eastern European countries display more diverse profiles, including a distinct cluster characterized by high institutional trust but restrictive attitudes toward immigration and gender equality.
+
+Henceforth, the findings imply that institutional trust serves as a key axis of distinction among European societies, yet it does not consistently lead to progressive views on immigration or gender equality. This divergence carries significant consequences for EU policy making, indicating the limitations of universal approaches.
+
+Although it offers valuable insights, the research has its shortcomings, namely, the partial European country coverage of ESS Round 11 and the absence of a direct question of trust in national governments. Moreover, the inherently subjective nature of Factor and Cluster Analysis means that alternative variable selections could yield different results.
+
+To sum up, this study helps us understand the social basis on which European integration evolves by uncovering both common trends and persistent divides in citizens’ perspectives on immigration, gender equality, and trust in public institutions. Further studies applying this method across various ESS rounds would be especially useful for evaluating how these perspectives evolve over time and in reaction to significant political, economic, and social upheavals.
 
 ## Appendix
 
-| ID | Question | Scale |
-|:----------------:|:---------------------------:|:-----------------------:|
-| trstprl | How much do you personally trust \[country\]'s parliament? | 0 (No trust at all) - 10 (Complete trust) |
-| trstlgl | How much do you personally trust the legal system? | 0 (No trust at all) - 10 (Complete trust) |
-| trstplt | How much do you personally trust politicians? | 0 (No trust at all) - 10 (Complete trust) |
-| trstprt | How much do you personally trust political parties? | 0 (No trust at all) - 10 (Complete trust) |
-| trstep | How much do you personally trust the European Parliament? | 0 (No trust at all) - 10 (Complete trust) |
-| trstun | How much do you personally trust the United Nations? | 0 (No trust at all) - 10 (Complete trust) |
-| imbgeco | Would you say it is generally bad or good for \[country\]’s economy that people come to live here from other countries? | 0 (Bad for economy) - 10 (Good for economy) |
-| imueclt | Would you say that \[country\]’s cultural life is generally undermined or enriched by people coming to live here from other countries? | 0 (Cultural life undermined) - 10 (Cultural life enriched) |
-| imwbcnt | Is \[country\] made a worse or a better place to live by people coming to live here from other countries? | 0 (Worse place to live) - 10 (Better place to live) |
-| imsmetn | To what extent do you think \[country\] should allow people of the same race or ethnic group as most \[country\]'s people to come and live here? | 1 (Allow many to come and live here) - 4 ( Allow none)^\*^ |
-| imdfetn | To what extent do you think \[country\] should allow people of a different race or ethnic group from most \[country\] people to come and live here? | 1 (Allow many to come and live here) - 4 (Allow none)^\*^ |
-| impcntr | To what extent do you think \[country\] should allow people from poorer countries outside Europe to come and live here? | 1 (Allow many to come and live here - 4 (Allow none) ^\*^ |
-| eqwrkbg | In general, how bad or good is it for family life in \[country\] if equal numbers of women and men are in paid work? | 0 (Very bad for family life in \[country\]) - 6 (Very good for family life in \[country\]) |
-| eqpolbg | In general, how bad or good is it for politics in \[country\] if equal numbers of women and men are in positions of political leadership? | 0 (Very bad for politics in \[country\]) – 6 (Very good for politics in \[country\]) |
-| eqmgmbg | In general, how bad or good is it for businesses in \[country\] if equal numbers of women and men are in higher management positions? | 0 (Very bad for businesses in \[country\]) – 6 (Very good for businesses in \[country\]) |
-| eqpaybg | In general, how bad or good is it for the strength of the economy in \[country\] if women and men receive equal pay for doing the same work? | 0 (Very bad for the strength of the economy in \[country\]) – 6 ( Very good for the strength of the economy in \[country\]) |
+```{=latex}
+\begin{tabular}{p{0.1\textwidth} p{0.6\textwidth} p{0.3\textwidth}} \toprule
+\caption{Variable Descriptions and Measurement Scales}
+\label{tbl-vars}
 
-: Selected variables
+\textbf{ID} & \textbf{Question} & \textbf{Scale} \\ \midrule
+trstprl & How much do you personally trust [country]'s parliament? & 0 (No trust at all) - 10 (Complete trust) \\ \midrule
+trstlgl & How much do you personally trust the legal system? & 0 (No trust at all) - 10 (Complete trust) \\ \midrule
+trstplt & How much do you personally trust politicians? & 0 (No trust at all) - 10 (Complete trust) \\ \midrule
+trstprt & How much do you personally trust political parties? & 0 (No trust at all) - 10 (Complete trust) \\ \midrule
+trstep & How much do you personally trust the European Parliament? & 0 (No trust at all) - 10 (Complete trust) \\ \midrule
+trstun & How much do you personally trust the United Nations? & 0 (No trust at all) - 10 (Complete trust) \\ \midrule
+imbgeco & Would you say it is generally bad or good for [country]'s economy that people come to live here from other countries? & 0 (Bad for economy) - 10 (Good for economy) \\ \midrule
+imueclt & Would you say that [country]'s cultural life is generally undermined or enriched by people coming to live here from other countries? & 0 (Cultural life undermined) - 10 (Cultural life enriched) \\ \midrule
+imwbcnt & Is [country] made a worse or a better place to live by people coming to live here from other countries? & 0 (Worse place to live) - 10 (Better place to live) \\ \midrule
+imsmetn$^{*}$ & To what extent do you think [country] should allow people of the same race or ethnic group as most [country]'s people to come and live here? & 1 (Allow many) - 4 (Allow none) \\ \midrule
+imdfetn$^{*}$ & To what extent do you think [country] should allow people of a different race or ethnic group from most [country] people to come and live here? & 1 (Allow many) - 4 (Allow none) \\ \midrule
+impcntr$^{*}$ & To what extent do you think [country] should allow people from poorer countries outside Europe to come and live here? & 1 (Allow many) - 4 (Allow none) \\ \midrule
+eqwrkbg & In general, how bad or good is it for family life in [country] if equal numbers of women and men are in paid work? & 0 (Very bad) - 6 (Very good) \\ \midrule
+eqpolbg & In general, how bad or good is it for politics in [country] if equal numbers of women and men are in positions of political leadership? & 0 (Very bad) - 6 (Very good) \\ \midrule
+eqmgmbg & In general, how bad or good is it for businesses in [country] if equal numbers of women and men are in higher management positions? & 0 (Very bad) - 6 (Very good) \\ \midrule
+eqpaybg & In general, how bad or good is it for the strength of the economy in [country] if women and men receive equal pay for doing the same work? & 0 (Very bad) - 6 (Very good) \\ \midrule
+\bottomrule
+\end{tabular}
+``` 
+
 
 ^\*^ The original scales of these three variables were reversed so that higher values consistently represent more positive or more permissive attitudes across all questions
 
-|                   |                             |
-|:-----------------:|:---------------------------:|
-|   **Country**     | **Number of observations**  |
-|   AT - Austria    |            1716             |
-|   BE - Belgium    |            1360             |
-|  BG - Bulgaria    |            1554             |
-|   CY - Cyprus     |            516              |
-|   DE - Germany    |            2046             |
-|   EE - Estonia    |            891              |
-|    ES - Spain     |            1448             |
-|   FI - Finland    |            1372             |
-|   FR - France     |            1382             |
-|   GR - Greece     |            2174             |
-|   HR - Croatia    |            1200             |
-|   HU - Hungary    |            1473             |
-|   IE - Ireland    |            1360             |
-|    IT - Italy     |            2165             |
-|  LT - Lithuania   |            904              |
-|    LV -Latvia     |            612              |
-| NL - Netherlands  |            1312             |
-|   PL - Poland     |            902              |
-|  PT - Portugal    |            1036             |
-|   SE - Sweden     |            1000             |
-|  SI - Slovenia    |            897              |
-|  SK - Slovakia    |            983              |
+|     Country      | Number of observations |
+|:----------------:|:----------------------:|
+|   AT - Austria   |          1716          |
+|   BE - Belgium   |          1360          |
+|  BG - Bulgaria   |          1554          |
+|   CY - Cyprus    |          516           |
+|   DE - Germany   |          2046          |
+|   EE - Estonia   |          891           |
+|    ES - Spain    |          1448          |
+|   FI - Finland   |          1372          |
+|   FR - France    |          1382          |
+|   GR - Greece    |          2174          |
+|   HR - Croatia   |          1200          |
+|   HU - Hungary   |          1473          |
+|   IE - Ireland   |          1360          |
+|    IT - Italy    |          2165          |
+|  LT - Lithuania  |          904           |
+|   LV - Latvia    |          612           |
+| NL - Netherlands |          1312          |
+|   PL - Poland    |          902           |
+|  PT - Portugal   |          1036          |
+|   SE - Sweden    |          1000          |
+|  SI - Slovenia   |          897           |
+|  SK - Slovakia   |          983           |
 
-CLUSTER 4 ANALYSIS STARTS HERE!!!
+: Number of observations for each country {#tbl-obs}
 
 ```{r}
 # # 1. Prepare data (select only numeric variables for clustering)
